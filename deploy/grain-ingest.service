@@ -1,0 +1,11 @@
+# EXAMPLE ONLY - not installed. systemd user unit; runs the local ingest, publishes nothing.
+# Install (when Ridge wants it):  cp deploy/grain-ingest.* ~/.config/systemd/user/ && systemctl --user daemon-reload \
+#                                  && systemctl --user enable --now grain-ingest.timer
+[Unit]
+Description=Grain bids daily ingest (USDA AMS -> local SQLite + JSON)
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/grain-app
+EnvironmentFile=-%h/grain-app/.env
+ExecStart=%h/grain-app/run_ingest.sh

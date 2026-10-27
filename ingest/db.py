@@ -1,0 +1,59 @@
+import sqlite3
+from .config import DB_PATH
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS locations (
+  id INTEGER PRIMARY KEY,
+  state TEXT NOT NULL,
+  name TEXT NOT NULL,            -- 'North Central' or 'Enderlin, ND'
+  section TEXT NOT NULL DEFAULT '', -- buyer type: Country Elevators / Terminals ...
+  lat REAL, lon REAL,
+  geo_method TEXT,               -- override | gazetteer_town | approx_region_centroid
+  distance_mi REAL,              -- haversine from Gann Valley
+  UNIQUE(state, name, section)
+);
+CREATE TABLE IF NOT EXISTS bids (
+  id INTEGER PRIMARY KEY,
+  commodity TEXT NOT NULL,       -- corn|soybeans|spring_wheat|winter_wheat|sunflowers
+  location_id INTEGER NOT NULL REFERENCES locations(id),
+  grade TEXT NOT NULL DEFAULT '',
+  protein TEXT NOT NULL DEFAULT '',
+  bid_low REAL, bid_high REAL, bid_avg REAL,   -- 'bid' for ranking = bid_high
+  unit TEXT,                     -- $/Bu or $/Cwt
+  basis_low REAL, basis_high REAL, basis_unit TEXT, basis_futures_month TEXT,
+  delivery TEXT NOT NULL DEFAULT 'Current',
+  freight TEXT, sale_type TEXT,
+  report_date TEXT NOT NULL,     -- YYYY-MM-DD
+  source_report TEXT NOT NULL,   -- AMS_3186 ...
+  source_title TEXT,
+  fetched_at TEXT,
+  is_sample INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(report_date, source_report, commodity, grade, protein, location_id, delivery)
+);
+CREATE INDEX IF NOT EXISTS idx_bids_lookup ON bids(commodity, location_id, report_date);
+CREATE TABLE IF NOT EXISTS futures (
+  report_date TEXT NOT NULL, exchange TEXT NOT NULL, commodity TEXT NOT NULL,
+  contract TEXT NOT NULL, settle_cents REAL, source_report TEXT, is_sample INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(report_date, exchange, commodity, contract)
+);
+CREATE TABLE IF NOT EXISTS unlocated (       -- rows we could not place on the map
+  report_date TEXT, source_report TEXT, state TEXT, name TEXT, section TEXT, reason TEXT,
+  PRIMARY KEY(report_date, source_report, state, name, section)
+);
+CREATE TABLE IF NOT EXISTS ingest_runs (
+  id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, source TEXT, summary TEXT
+);
+CREATE VIEW IF NOT EXISTS bids_flat AS
+  SELECT b.commodity, l.state||' '||l.name AS location, l.lat, l.lon, l.geo_method, l.distance_mi,
+         b.bid_high AS bid, b.bid_low, b.bid_avg, b.unit, b.basis_low, b.basis_high, b.basis_unit,
+         b.basis_futures_month, b.delivery, b.grade, b.protein, b.report_date, b.source_report, b.is_sample
+  FROM bids b JOIN locations l ON l.id=b.location_id;
+"""
+
+def connect(path=None):
+    p = path or DB_PATH
+    p.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(p)
+    con.row_factory = sqlite3.Row
+    con.executescript(SCHEMA)
+    return con

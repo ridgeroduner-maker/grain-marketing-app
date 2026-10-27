@@ -1,0 +1,110 @@
+"""Daily ingest: AMS grain bids -> SQLite, 300-mile haversine filter.
+
+Usage:
+  python3 -m ingest.ingest                 # today's published reports (PDF, keyless; MARS if key set)
+  python3 -m ingest.ingest --source pdf    # force keyless PDF path
+  python3 -m ingest.ingest --source mars --date 2026-10-26
+  python3 -m ingest.ingest --source mars --backfill-days 90   # needs USDA_AMS_API_KEY
+  python3 -m ingest.ingest --export        # also regenerate public/data/*.json
+Never writes anywhere but the local SQLite file and public/data/. Publishes nothing."""
+import argparse, datetime, json, sys, traceback
+from . import config, geo, db, parse_pdf, mars_api
+
+def upsert(con, bids, futures, source_label, slug_state, report_date_for_unlocated=None):
+    stats = {"kept": 0, "outside_radius": 0, "unlocated": 0, "futures": 0}
+    now = datetime.datetime.now().isoformat(timespec="seconds")
+    for b in bids:
+        state = b["state"] or b["location"].rsplit(",", 1)[-1].strip()
+        if "," in b["location"]:
+            state = b["location"].rsplit(",", 1)[-1].strip()
+        hit = geo.locate(state, b["location"], b["section"])
+        if not hit:
+            con.execute("INSERT OR REPLACE INTO unlocated VALUES (?,?,?,?,?,?)",
+                        (b["report_date"], b["source_report"], state, b["location"], b["section"], "no coordinates"))
+            stats["unlocated"] += 1
+            continue
+        lat, lon, method = hit
+        dist = geo.haversine_miles(config.CENTER_LAT, config.CENTER_LON, lat, lon)
+        if dist > config.RADIUS_MILES:
+            stats["outside_radius"] += 1
+            continue
+        con.execute("""INSERT INTO locations(state,name,section,lat,lon,geo_method,distance_mi) VALUES (?,?,?,?,?,?,?)
+                       ON CONFLICT(state,name,section) DO UPDATE SET lat=excluded.lat, lon=excluded.lon,
+                       geo_method=excluded.geo_method, distance_mi=excluded.distance_mi""",
+                    (state, b["location"], b["section"], lat, lon, method, round(dist, 1)))
+        lid = con.execute("SELECT id FROM locations WHERE state=? AND name=? AND section=?",
+                          (state, b["location"], b["section"])).fetchone()[0]
+        con.execute("""INSERT OR REPLACE INTO bids(commodity,location_id,grade,protein,bid_low,bid_high,bid_avg,unit,
+                       basis_low,basis_high,basis_unit,basis_futures_month,delivery,freight,sale_type,report_date,
+                       source_report,source_title,fetched_at,is_sample) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)""",
+                    (b["commodity"], lid, b["grade"], b["protein"], b["bid_low"], b["bid_high"], b["bid_avg"], b["unit"],
+                     b["basis_low"], b["basis_high"], b["basis_unit"], b["basis_futures_month"], b["delivery"],
+                     b["freight"], b["sale_type"], b["report_date"], b["source_report"], b["source_title"], now))
+        stats["kept"] += 1
+    for f in futures:
+        con.execute("INSERT OR REPLACE INTO futures VALUES (?,?,?,?,?,?,0)",
+                    (f["report_date"], f["exchange"], f["commodity"], f["contract"], f["settle_cents"], f["source_report"]))
+        stats["futures"] += 1
+    return stats
+
+def run(source, date_iso, backfill_days, export):
+    con = db.connect()
+    started = datetime.datetime.now().isoformat(timespec="seconds")
+    use_mars = source == "mars" or (source == "auto" and bool(__import__("os").environ.get(config.API_KEY_ENV)))
+    summary, failures = [], 0
+    if use_mars:
+        mars_api._key()   # fail fast with NoApiKey instead of once per report
+    for rep in config.REPORTS:
+        slug, title, state = rep["slug"], rep["title"], rep["state"]
+        try:
+            # PDF is always fetched for the futures settlements block (keyless)
+            parsed = None
+            try:
+                pdf = parse_pdf.fetch_pdf(slug)
+                parsed = parse_pdf.parse_report(parse_pdf.pdf_to_text(pdf), slug, title, state)
+            except Exception as e:
+                if not use_mars:
+                    raise
+                print(f"  [{slug}] PDF unavailable ({e}); continuing with API only", file=sys.stderr)
+            bids = parsed["bids"] if (parsed and not use_mars) else []
+            futs = []
+            if parsed:
+                futs = [dict(f, report_date=parsed["report_date"], source_report=f"AMS_{slug}") for f in parsed["futures"]]
+            if use_mars:
+                if backfill_days:
+                    end = datetime.date.today()
+                    rows = mars_api.fetch_report_range(slug, (end - datetime.timedelta(days=backfill_days)).isoformat(), end.isoformat())
+                else:
+                    rows = mars_api.fetch_report_detail(slug, date_iso)
+                bids, _ = mars_api.normalize_rows(rows, slug, title, state)
+            st = upsert(con, bids, futs, "mars" if use_mars else "pdf", state)
+            rd = parsed["report_date"] if parsed else date_iso
+            line = f"AMS_{slug} {title[:38]:38} date={rd} parsed={len(bids)} {st}"
+            print(line); summary.append(line)
+        except Exception as e:
+            failures += 1
+            traceback.print_exc()
+            summary.append(f"AMS_{slug} FAILED: {e}")
+    con.execute("INSERT INTO ingest_runs(started_at,finished_at,source,summary) VALUES (?,?,?,?)",
+                (started, datetime.datetime.now().isoformat(timespec="seconds"), "mars" if use_mars else "pdf", "\n".join(summary)))
+    con.commit()
+    if export:
+        from . import export_json
+        export_json.export(con, config.ROOT / "public" / "data", sample=False)
+    return failures
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--source", choices=["auto", "pdf", "mars"], default="auto")
+    ap.add_argument("--date", help="YYYY-MM-DD (mars only)")
+    ap.add_argument("--backfill-days", type=int, default=0, help="mars only")
+    ap.add_argument("--export", action="store_true")
+    a = ap.parse_args()
+    try:
+        rc = run(a.source, a.date, a.backfill_days, a.export)
+    except mars_api.NoApiKey as e:
+        print(f"ERROR: {e}. Use --source pdf or set the key (see README).", file=sys.stderr); rc = 2
+    sys.exit(1 if rc else 0)
+
+if __name__ == "__main__":
+    main()

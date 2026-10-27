@@ -1,0 +1,10 @@
+# EXAMPLE ONLY - not installed. AMS grain reports finalize ~2-3 PM Central; run at 4:30 PM CT weekdays.
+[Unit]
+Description=Run grain ingest on weekday afternoons
+
+[Timer]
+OnCalendar=Mon..Fri 16:30 America/Chicago
+Persistent=true
+
+[Install]
+WantedBy=timers.target

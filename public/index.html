@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grain Bids near Gann Valley, SD</title>
+<meta name="theme-color" content="#2f5d1f">
+<meta name="description" content="End-of-day USDA AMS cash grain bids within 300 miles of Gann Valley, SD.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><img src="icons/icon.svg" alt="" width="28" height="28"> <h1>Grain Bids <small>300 mi of Gann Valley, SD</small></h1></div>
+  <div class="hdr-right"><span id="asof" class="asof"></span> <button id="installBtn" hidden>Install app</button></div>
+</header>
+<div id="sampleBanner" class="banner sample" hidden>SAMPLE DATA — synthetic prices for demo only. <a href="?">Switch to real data</a></div>
+<div id="noteBanner" class="banner info" hidden></div>
+
+<section class="controls">
+  <label>Commodity <select id="selCommodity"></select></label>
+  <label>Product <select id="selVariant"></select></label>
+  <label>Delivery <select id="selDelivery"></select></label>
+</section>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="map" aria-selected="true">Map</button>
+  <button role="tab" data-tab="best" aria-selected="false">Best bid near me</button>
+  <button role="tab" data-tab="alerts" aria-selected="false">Alerts</button>
+  <button role="tab" data-tab="history" aria-selected="false">History</button>
+</nav>
+
+<main>
+  <section id="tab-map" class="tab active">
+    <div class="split">
+      <div id="map" aria-label="Map of grain bid locations"></div>
+      <div class="side">
+        <h2>Bids <span id="mapCount" class="muted"></span></h2>
+        <div class="tablewrap"><table id="bidTable"><thead><tr><th>Location</th><th>Bid</th><th>Basis</th><th>Mi</th></tr></thead><tbody></tbody></table></div>
+        <div id="futuresBox"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-best" class="tab">
+    <p><button id="btnLocate" class="primary">Use my location</button>
+       <span id="locStatus" class="muted">Default: Gann Valley, SD</span></p>
+    <p><label>Within <select id="selRadius"><option value="50">50 mi</option><option value="100">100 mi</option><option value="150">150 mi</option><option value="200">200 mi</option><option value="300" selected>300 mi</option><option value="9999">any</option></select> of me</label></p>
+    <div id="bestCards" class="cards"></div>
+    <p class="muted small">Your location stays in this browser; it is never sent anywhere. “Bid” = high end of the AMS reported range. Most AMS bids are for a <b>region</b> and are plotted at an approximate region center, so distances are rough.</p>
+  </section>
+
+  <section id="tab-alerts" class="tab">
+    <h2>Price alerts</h2>
+    <form id="alertForm" class="alertform">
+      <select id="aCommodity"></select>
+      <select id="aVariant"></select>
+      <select id="aLocation"></select>
+      <select id="aDir"><option value="gte">bid at or above</option><option value="lte">bid at or below</option></select>
+      <input id="aPrice" type="number" step="0.01" min="0" placeholder="price" required>
+      <button class="primary" type="submit">Add alert</button>
+    </form>
+    <div class="muted small" id="notifStatus"></div>
+    <button id="btnNotif">Enable notifications</button> <button id="btnCheck">Check now</button>
+    <ul id="alertList" class="alertlist"></ul>
+    <details class="small"><summary>How alerts work (and their limits)</summary>
+      <p>Alerts are stored only in this browser (localStorage / IndexedDB). They are checked every time you open the app and about every 15 minutes while it is open. Data is end-of-day, so a given alert can only fire once per day's report.</p>
+      <p><b>No server = no true push.</b> Web Push needs a push service plus a server that sends messages, so a closed app cannot be woken on a schedule by this version. On Chrome/Edge (Android &amp; desktop) an <i>installed</i> app may also get Periodic Background Sync checks (experimental, browser-throttled, not guaranteed). iOS needs the app added to the Home Screen (iOS 16.4+) and only supports notifications while using a push server.</p>
+    </details>
+  </section>
+
+  <section id="tab-history" class="tab">
+    <div class="controls inline">
+      <label>Location <select id="hLocation"></select></label>
+      <label>Compare with <select id="hLocation2"></select></label>
+      <label>Range <select id="hRange"><option value="30">30 days</option><option value="90">90 days</option><option value="365">1 year</option><option value="99999" selected>All</option></select></label>
+    </div>
+    <div class="chartwrap"><canvas id="histChart"></canvas></div>
+    <p id="histNote" class="muted small"></p>
+  </section>
+</main>
+
+<footer>
+  <p>Data: USDA Agricultural Marketing Service (AMS) Livestock, Poultry &amp; Grain Market News — end-of-day, regional bids; futures are exchange settlements as published in those reports. Not real-time; not trading advice. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</p>
+</footer>
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/chart.umd.js"></script>
+<script src="alerts-core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

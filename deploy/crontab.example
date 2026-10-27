@@ -1,0 +1,3 @@
+# EXAMPLE ONLY - not installed. `crontab -e` and add (adjust path; cron uses system TZ, so pin it):
+CRON_TZ=America/Chicago
+30 16 * * 1-5  /home/USER/grain-app/run_ingest.sh >> /home/USER/grain-app/data/ingest.log 2>&1

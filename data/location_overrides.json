@@ -1,0 +1,5 @@
+{
+  "_comment": "Optional hand-set coordinates. Key 'ST|Location' or 'ST|Location|Section'. Used before gazetteer/region-centroid guesses. Replace region guesses with real AMS trade-region centers when known.",
+  "IA|Southwest|Terminal Elevators": {"lat": 41.2619, "lon": -95.8608, "note": "AMS header: 'Terminal Elevators: Southwest Region - Council Bluffs locations'"},
+  "MN|South": {"lat": 43.9, "lon": -94.5, "note": "Southern Minnesota report; rough center of southern MN (approximate)"}
+}
