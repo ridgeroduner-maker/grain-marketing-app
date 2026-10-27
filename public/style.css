@@ -53,3 +53,14 @@ footer{padding:12px 14px 28px;color:var(--mut);font-size:12px}
 .mapcol{min-width:0}
 #map.notiles{background:#eef1e6}
 .banner.note{background:#fff4d6;color:#4a3b00;border:1px solid #e6c766;border-radius:8px;margin-bottom:6px}
+
+/* legal pages (terms.html, privacy.html) */
+.banner.draft{background:#fde7e4;color:#7a1410;border-bottom:2px solid var(--warn);font-size:14px}
+.ph{background:#fff1a8;color:#3b2f00;padding:0 3px;border-radius:3px;font-weight:600}
+.backlink{color:#fff;font-size:14px}
+main.legal{max-width:760px;margin:0 auto;padding:12px 16px 8px;font-size:16px;line-height:1.55}
+main.legal .pagetitle{font-size:24px;margin:10px 0 4px}
+main.legal h3{font-size:18px;margin:22px 0 6px}
+main.legal ul{padding-left:22px}main.legal li{margin:4px 0}
+.legalpage footer{max-width:760px;margin:0 auto}
+.legalpage a:focus-visible{outline:3px solid #0645ad;outline-offset:2px}

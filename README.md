@@ -98,13 +98,39 @@ To use a raster provider anyway: set `MAP_TILES_URL` to its `https://…/{z}/{x}
 
 **Recommended CSP when hosting** (tested here on the map page with the default setup: map tiles, pins and ring rendered and no console violations; a `<meta>` copy is not shipped in `index.html`, so add it as a response header or meta tag at your host): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'`. Other tabs (History charts, alerts) were not run under this CSP.
 
-**Caching.** `sw.js` (v5) ignores cross-origin requests and `.pmtiles` requests (a cached 200 copy would break range reads) and does not precache the tile file, so the map needs the network; offline you get the plain map with the notice. Tests assert both rules.
+**Caching.** `sw.js` (v6) ignores cross-origin requests and `.pmtiles` requests (a cached 200 copy would break range reads) and does not precache the tile file, so the map needs the network; offline you get the plain map with the notice. Tests assert both rules.
 
 **Privacy**: with the default setup the map makes no third-party requests. A raster provider or `osm-dev` would see visitors' IP addresses and map areas.
 
+## Draft legal pages (Job 7) - **DRAFT, not legal advice, have a lawyer review**
+`public/terms.html` and `public/privacy.html` are **drafts written for Ridge's review**, not legal advice and not final. Each file carries a red "DRAFT - not legal advice, have a lawyer review" banner at the top. They are plain static pages with the site's styling (no JavaScript, mobile-friendly), linked from the footer of `index.html` and to each other, copied into `dist/` by `build_dist.sh` (the build fails if either is missing). Everything still to be supplied is a yellow **`[[PLACEHOLDER]]`**: `[[OWNER LEGAL NAME]]`, `[[CONTACT EMAIL]]`, `[[EFFECTIVE DATE]]`, `[[GOVERNING STATE: likely South Dakota, Ridge to confirm]]`, `[[HOST: GitHub Pages is the intended host - TBD ...]]`, plus a few `[[LAWYER: ...]]` / `[[OWNER TO CONFIRM ...]]` notes. Nothing (name, email, date) was invented. **Remove the DRAFT banner only after review.**
+
+**Service worker**: both pages are precached (`sw.js` SHELL, cache version bumped `grain-v5` to `grain-v6`) so the footer links work offline in an installed app; after that they are served network-first like other app files, so edits reach people. A test checks every precached file exists.
+
+**What the Privacy Policy says, and where I checked it in the code** (tests in `ingest/tests/test_legal.py` keep this true):
+* **No accounts / no server-side user data**: no sign-in or server code in `public/`; the only network calls are same-site (`data/*.json`, `sw.js` fetching `data/latest.json`, a Range probe of `tiles/plains.pmtiles`). None carries alerts, location or settings.
+* **Alerts/settings**: `localStorage` keys `grain.alerts` and `grain.me` only, plus an IndexedDB copy (`grain-app` / `kv`) so the service worker can check alerts; Cache Storage holds the app shell and data files (never the `.pmtiles`). No `sessionStorage`.
+* **Geolocation**: one `getCurrentPosition` call, inside `locate()`, reached only from the "Use my location" button; low accuracy, 15 s timeout, 10 min cached position allowed; the result goes to `localStorage` (`grain.me`, kept until the user clears site data) and is used in the browser for distances and the map dot, never sent anywhere. The browser asks permission; refusal falls back to Gann Valley. The page says so.
+* **Notifications**: permission requested only from the "Enable notifications" button; alerts are evaluated on the device; the page registers Chrome Periodic Background Sync if available (browser-gated, experimental); no push server.
+* **Cookies/analytics**: no `document.cookie`/cookieStore, no analytics, ads or beacons in the app or vendored libraries (scan of `dist/`).
+* **External requests**: scan of the built `dist/` found no external scripts, styles, fonts, images or CDNs; the only absolute URLs are plain links (USDA, OpenStreetMap, Protomaps, ODbL, Leaflet, Chart.js) and the OSM dev tile URL in `mapmode.js`, used only on localhost with `MAP_TILES_URL` empty. Headless Chrome loaded the index, terms and privacy pages with every resource coming from the one local host and empty `document.cookie`.
+* **Host**: GitHub Pages named as the intended host, marked TBD; the page says host logs are the host's.
+
+**Open questions for Ridge**
+1. Legal name of the owner (person or business) to put in `[[OWNER LEGAL NAME]]`?
+2. A contact email for `[[CONTACT EMAIL]]` (a role address you are happy to publish)?
+3. Effective date (the day you publish after review)?
+4. Governing state (likely South Dakota) and any venue/dispute wording?
+5. Is GitHub Pages really the host? Can you see any of its logs or statistics (the draft says only that the host keeps its own)? If you switch to a keyed or outside map provider, the privacy page must change first.
+6. CME Group: you accepted the display risk; does the lawyer want a permission, a different credit line, or `FUTURES_DISPLAY=basis_only`?
+7. Is the liability limit enforceable as written in your state, and do you want a dollar cap?
+8. Do you want a "forget my location" button (today it is cleared only by clearing site data)?
+9. Children's wording and any state-law notices (the draft claims no personal data is collected by the app itself).
+10. Should the footer say "draft" until review, or should the links stay hidden until launch?
+
 ## Not done / still open
 * Region→county definitions (USDA does not publish them, so region pins and the 300-mile edge stay approximate; a region whose approximate centre is just outside 300 mi may partly be inside).
-* Real push alerts, the app's own Terms of Use and Privacy Policy pages , and USDA/CME written confirmation (CME risk accepted by Ridge per Decisions).
+* Real push alerts, a lawyer's review and sign-off of the DRAFT Terms of Use and Privacy Policy pages (see **Draft legal pages**), and USDA/CME written confirmation (CME risk accepted by Ridge per Decisions).
 
 ## 1. USDA AMS data sources (researched 2026-10-27)
 
@@ -171,6 +197,7 @@ Static site (no backend): `index.html, app.js, style.css, manifest.webmanifest, 
 * SAMPLE data is always flagged: yellow banner, “(SAMPLE)” in header/popups, `is_sample=1` rows in `data/sample.db`. The sample fallback and `?sample=1` are disabled unless `ALLOW_SAMPLE` is true in `public/config.js`.
 
 ## Verified here
+Job 7 (2026-10-27): headless Chrome on `serve.py`: terms and privacy pages at 390 px and 1200 px wide, no horizontal overflow, DRAFT banner and highlighted placeholders visible, no console errors, only the local host contacted, `document.cookie` empty; the index footer links to both; the service worker installed cache `grain-v6` containing `/terms.html` and `/privacy.html` and no `.pmtiles`. Tests: 47 python (12 new in `test_legal.py`), `alerts-core.test.js`, `mapmode.test.js`. **Not verified**: legal accuracy (no lawyer), real host logging behaviour, other browsers/phones, screen-reader pass of the new pages.
 Job 6 (2026-10-27): the extract was really built with `./build_tiles.sh` (free CLI, no account; 17 MB, `pmtiles verify` ok) and served by `serve.py` with Range support. Headless Chrome (CDP): (a) on `localhost` and (b) on a non-localhost host name, **real map tiles rendered** (16 tile canvases, roads/labels/states visible, 18 pins, ring, attribution "Leaflet | © OpenStreetMap contributors · Protomaps basemap", no console errors, no notice); (c) a host that ignores Range (python `http.server`) gave the plain map with the notice "the web host does not support HTTP Range requests (it answered 200, not 206)"; (d) file missing gave the notice "…is not on the server — build it with ./build_tiles.sh"; (e) an unreachable raster URL gave the plain map and notice after 4 failed tiles; (f) with a strict CSP meta (see Map) the map rendered with no violations. WebGL is not needed. **Not verified**: any real static host (GitHub Pages/Netlify/Cloudflare) because nothing was deployed (host behaviour comes from the docs/issue linked above); raster providers (no accounts); OSM dev tiles on localhost in this job; Firefox/Safari; phones; the service worker + map offline path in a browser. Tests: 35 python, `alerts-core.test.js`, `mapmode.test.js`.
 Job 5 (2026-10-27, superseded map parts): the Google Maps adapter described there was removed in Job 6; the stale-report, outside-radius and a11y checks still apply.
 Job 5 (2026-10-27): headless Chrome (CDP) with no key on a non-localhost host showed the plain map, pins, ring and the "Map tiles not configured" notice with no console errors; on localhost the OSM dev map; with a fake key Google answered `InvalidKeyMapError` and the page fell back to the plain map with the notice (the **success path with a valid key is not verified**, no key exists); a copy of the data with only ND aged showed the per-report banner line, the "Not ranked" note on the Best-bid card and the "just outside your radius" list (ND Northeast 304 mi, ND North Central 307 mi). Tests: 32 python, `alerts-core.test.js`, `mapmode.test.js`.
