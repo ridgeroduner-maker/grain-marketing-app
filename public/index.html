@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Grain Bids near Gann Valley, SD</title>
 <meta name="theme-color" content="#2f5d1f">
-<meta name="description" content="End-of-day USDA AMS cash grain bids within 300 miles of Gann Valley, SD.">
+<meta name="description" content="USDA AMS regional cash grain bids within about 300 miles of Gann Valley, SD (posted about 2 to 4 pm Central each business day).">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -19,11 +19,12 @@
 </header>
 <div id="sampleBanner" class="banner sample" hidden>SAMPLE DATA — synthetic prices for demo only. <a href="?">Switch to real data</a></div>
 <div id="noteBanner" class="banner info" hidden></div>
-<div class="banner confirm" role="note"><b>Call your elevator to confirm.</b> These are USDA end-of-day <i>regional</i> bid reports — not offers from any elevator, and not real-time. Each bid shows when USDA posted it.</div>
+<div id="statusBanner" class="banner status ok" role="status">Loading data status…</div>
+<div class="banner confirm" role="note"><b>Call your elevator to confirm.</b> These are USDA <i>regional</i> bid reports, posted about 2 to 4 pm Central each business day — not offers from any elevator, and not real-time. Each bid shows when USDA posted it.</div>
 
 <section class="controls">
   <label>Commodity <select id="selCommodity"></select></label>
-  <label>Product <select id="selVariant"></select></label>
+  <label>Product (grade · freight) <select id="selVariant"></select></label>
   <label>Delivery <select id="selDelivery"></select></label>
 </section>
 
@@ -40,7 +41,10 @@
       <div id="map" aria-label="Map of grain bid locations"></div>
       <div class="side">
         <h2>Bids <span id="mapCount" class="muted"></span></h2>
-        <div class="tablewrap"><table id="bidTable"><thead><tr><th>Location</th><th>Bid</th><th>Basis</th><th>Mi</th><th>Posted</th></tr></thead><tbody></tbody></table></div>
+        <div class="tablewrap"><table id="bidTable"><thead><tr><th>Location</th><th>USDA bid range</th><th>Basis</th><th title="Straight-line miles, calculated by this app">Mi*</th><th>Posted (CT)</th></tr></thead><tbody></tbody></table></div>
+        <p id="selNote" class="small muted"></p>
+        <p class="small muted">* Mi = straight-line (as-the-crow-flies) miles from you (or Gann Valley) to the pin, calculated by this app; not driving distance. ~ = region bid, approximate pin.</p>
+        <div id="unplaced" class="small"></div>
         <div id="futuresBox"></div>
       </div>
     </div>
@@ -49,9 +53,9 @@
   <section id="tab-best" class="tab">
     <p><button id="btnLocate" class="primary">Use my location</button>
        <span id="locStatus" class="muted">Default: Gann Valley, SD</span></p>
-    <p><label>Within <select id="selRadius"><option value="50">50 mi</option><option value="100">100 mi</option><option value="150">150 mi</option><option value="200">200 mi</option><option value="300" selected>300 mi</option><option value="9999">any</option></select> of me</label></p>
+    <p><label>Sort <select id="selSort"><option value="high">Highest bid first</option><option value="near">Closest first</option></select></label> <label>Within <select id="selRadius"><option value="50">50 mi</option><option value="100">100 mi</option><option value="150">150 mi</option><option value="200">200 mi</option><option value="300" selected>300 mi</option><option value="9999">any</option></select> of me</label></p>
     <div id="bestCards" class="cards"></div>
-    <p class="muted small">Your location stays in this browser; it is never sent anywhere. “Bid” = high end of the AMS reported range. Most AMS bids are for a <b>region</b> and are plotted at an approximate region center, so distances are rough.</p>
+    <p class="muted small">Your location stays in this browser; it is never sent anywhere. <b>Distance is straight-line miles</b> (as the crow flies), not driving distance. Each bid is a USDA <i>range</i>; ranking uses the top of the range, which is this app’s own choice. Bids of different grades or freight terms (delivered vs FOB) are never mixed — pick the one you want in each card. Most bids are for a <b>region</b> and are drawn at an approximate region center (~), so distances are rough.</p>
   </section>
 
   <section id="tab-alerts" class="tab">
@@ -68,7 +72,7 @@
     <button id="btnNotif">Enable notifications</button> <button id="btnCheck">Check now</button>
     <ul id="alertList" class="alertlist"></ul>
     <details class="small"><summary>How alerts work (and their limits)</summary>
-      <p>Alerts are stored only in this browser (localStorage / IndexedDB). They are checked every time you open the app and about every 15 minutes while it is open. Data is end-of-day, so a given alert can only fire once per day's report.</p>
+      <p>Alerts are stored only in this browser (localStorage / IndexedDB). They are checked every time you open the app and about every 15 minutes while it is open. USDA reports are posted once per business day (about 2 to 4 pm Central), so a given alert can only fire once per day's report. Alerts ignore bids more than 2 business days old.</p>
       <p><b>No server = no true push.</b> Web Push needs a push service plus a server that sends messages, so a closed app cannot be woken on a schedule by this version. On Chrome/Edge (Android &amp; desktop) an <i>installed</i> app may also get Periodic Background Sync checks (experimental, browser-throttled, not guaranteed). iOS needs the app added to the Home Screen (iOS 16.4+) and only supports notifications while using a push server.</p>
     </details>
   </section>
@@ -85,9 +89,12 @@
 </main>
 
 <footer>
-  <p><b>Source: USDA Agricultural Marketing Service (AMS) Livestock, Poultry &amp; Grain Market News</b> — reports SD 3186, ND 3878, NE 3225, S. MN 3049, IA 2850, sunflowers 2887, published at <a href="https://mymarketnews.ams.usda.gov/">mymarketnews.ams.usda.gov</a>. Bids are end-of-day, by region (not by elevator); the “Posted” time is when USDA published the report (Central Time). End-of-day futures settlements are as printed in those USDA reports (CBOT / KCBT / MGE), not live quotes. This app is not affiliated with or endorsed by USDA. Call your elevator to confirm any price. Not trading advice.</p>
-  <p>Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</p>
+  <p><b>Source: USDA Agricultural Marketing Service (AMS) Livestock, Poultry &amp; Grain Market News</b> — reports SD 3186, ND 3878, NE 3225, S. MN 3049, IA 2850, sunflowers 2887, at <a href="https://mymarketnews.ams.usda.gov/">mymarketnews.ams.usda.gov</a>. Reports are posted about 2 to 4 pm Central each business day; the “Posted” time is when USDA published each one. Bids are by region (not by elevator), except sunflowers, which USDA lists by processor town. This app is not affiliated with or endorsed by USDA.</p>
+  <p><b>About USDA’s numbers:</b> USDA says price reporting is voluntary, reporters may exclude outliers, and basis may be figured from the current or the prior day’s close (paraphrased — see USDA’s report pages for its official wording). Futures settlements, when shown, are copied as printed in those USDA reports; they are not live quotes.</p>
+  <p><b>Calculated by this app, not by USDA:</b> the “high end of range” used for ranking, “best”, straight-line distances, map pin positions (region pins are approximate), cents-to-dollars conversion of settlements, the exchange named on each basis (CBOT for corn and soybeans, MGE for spring wheat, KCBT for winter wheat), and changes since the previous report we loaded. Call your elevator to confirm any price. Not trading advice.</p>
+  <p>Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Maps by <a href="vendor/LICENSE-leaflet.txt">Leaflet</a> (BSD-2-Clause), charts by <a href="vendor/LICENSE-chartjs.txt">Chart.js</a> (MIT) — <a href="vendor/LICENSE-leaflet.txt">license texts</a>.</p>
 </footer>
+<script src="config.js"></script>
 <script src="vendor/leaflet.js"></script>
 <script src="vendor/chart.umd.js"></script>
 <script src="alerts-core.js"></script>

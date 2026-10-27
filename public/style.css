@@ -41,3 +41,10 @@ footer{padding:12px 14px 28px;color:var(--mut);font-size:12px}
 .banner.confirm{background:#fff4d6;color:#4a3b00;border-bottom:1px solid #e6c766;font-size:.9rem}
 .confirm{color:#6b4e00}
 .small{font-size:.8rem}
+.banner.status{border-bottom:1px solid #cfd8c2}.banner.status.ok{background:#e6efdc;color:#2c3d22}
+.banner.status.warn{background:#ffd9d4;color:#6b1410;font-weight:600;border-color:#e59a92}
+.warnTxt{color:#b3261e}
+.maplegend{background:#fffe;padding:6px 8px;border-radius:8px;font-size:11px;line-height:1.6;border:1px solid var(--line)}
+.maplegend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#d9a400;vertical-align:middle;margin-right:4px}
+.maplegend .dot.dashed{border:1.5px dashed #555;background:#d9a40088}
+.card ol.ranked{list-style:none;padding-left:0}.card .big small{font-size:14px;font-weight:400}

@@ -1,7 +1,7 @@
 /* Service worker: offline app shell + network-first data. No server push (see README). */
 importScripts('alerts-core.js');
-const VERSION = 'grain-v2';
-const SHELL = ['./', 'index.html', 'app.js', 'alerts-core.js', 'style.css', 'manifest.webmanifest',
+const VERSION = 'grain-v3';
+const SHELL = ['./', 'index.html', 'config.js', 'app.js', 'alerts-core.js', 'style.css', 'manifest.webmanifest',
   'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/chart.umd.js',
   'vendor/images/marker-icon.png', 'vendor/images/marker-icon-2x.png', 'vendor/images/marker-shadow.png',
   'vendor/images/layers.png', 'vendor/images/layers-2x.png',
@@ -13,18 +13,25 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
+// Only cache good, same-origin responses: never keep a 404/500 page and replay it offline.
+const cacheable = (r) => r && r.ok && r.status === 200 && r.type === 'basic';
+function fromCacheMarked(hit) {      // tell the page this is a saved copy (it shows "offline — data is N days old")
+  const h = new Headers(hit.headers); h.set('X-Grain-Cache', '1');
+  return hit.blob().then(b => new Response(b, { status: hit.status, statusText: hit.statusText, headers: h }));
+}
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;            // map tiles etc: let the browser handle
-  const isData = url.pathname.includes('/data/') || url.pathname.includes('/data-sample/');
-  if (isData) {                                          // network-first, fall back to last copy
-    e.respondWith(fetch(req).then(r => { const cp = r.clone(); caches.open(VERSION).then(c => c.put(req, cp)); return r; })
-      .catch(() => caches.match(req)));
-  } else {                                               // cache-first shell
-    e.respondWith(caches.match(req).then(h => h || fetch(req).then(r => { const cp = r.clone(); caches.open(VERSION).then(c => c.put(req, cp)); return r; })));
+  const isVendor = url.pathname.includes('/vendor/') || url.pathname.includes('/icons/');
+  if (isVendor) {                                        // versioned third-party files: cache-first
+    e.respondWith(caches.match(req).then(h => h || fetch(req).then(r => { if (cacheable(r)) { const cp = r.clone(); caches.open(VERSION).then(c => c.put(req, cp)); } return r; })));
+    return;
   }
+  // data AND app files: network-first (so users get fixes/fresh prices); saved copy only if the network fails.
+  e.respondWith(fetch(req).then(r => { if (cacheable(r)) { const cp = r.clone(); caches.open(VERSION).then(c => c.put(req, cp)); } return r; })
+    .catch(() => caches.match(req).then(h => h ? fromCacheMarked(h) : Response.error())));
 });
 
 // Experimental: Chromium "Periodic Background Sync" for installed PWAs (no server needed, not guaranteed).
