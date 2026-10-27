@@ -1,8 +1,8 @@
 /* Service worker: offline app shell + network-first data. No server push (see README). */
 importScripts('alerts-core.js');
-const VERSION = 'grain-v4';
+const VERSION = 'grain-v5';
 const SHELL = ['./', 'index.html', 'config.js', 'mapmode.js', 'app.js', 'alerts-core.js', 'style.css', 'manifest.webmanifest',
-  'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/chart.umd.js',
+  'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/chart.umd.js', 'vendor/protomaps-leaflet.js',
   'vendor/images/marker-icon.png', 'vendor/images/marker-icon-2x.png', 'vendor/images/marker-shadow.png',
   'vendor/images/layers.png', 'vendor/images/layers-2x.png',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
@@ -23,7 +23,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== location.origin) return;            // Google Maps / tiles / any cross-origin response: never touched or cached by this worker
+  if (url.origin !== location.origin) return;            // any cross-origin response (tile providers etc.): never touched or cached by this worker
+  if (url.pathname.endsWith('.pmtiles')) return;        // map tile archive: read with HTTP Range requests by the page; the worker must not touch it (a cached 200 would break ranges)
   const isVendor = url.pathname.includes('/vendor/') || url.pathname.includes('/icons/');
   if (isVendor) {                                        // versioned third-party files: cache-first
     e.respondWith(caches.match(req).then(h => h || fetch(req).then(r => { if (cacheable(r)) { const cp = r.clone(); caches.open(VERSION).then(c => c.put(req, cp)); } return r; })));

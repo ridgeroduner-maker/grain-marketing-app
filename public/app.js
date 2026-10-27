@@ -116,9 +116,9 @@ function onVariant() {
 function renderAll() { renderMap(); renderTable(); renderFutures(); renderHistorySelectors(); renderBest(); }
 
 // ---------- map ----------
-// Three modes (see mapmode.js): Google Maps JavaScript API when a key is configured; otherwise Leaflet with no tiles
-// (pins + ring on a plain background), or OSM tiles on localhost for development only. Google content is never put in Leaflet
-// and Leaflet is never put near a Google map: only one engine is created per page.
+// Which map is drawn is decided by ONE setting, MAP_TILES_URL (see mapmode.js and config.js): self-hosted PMTiles vector tiles
+// (default), a raster XYZ provider, OSM on localhost for development, or no tiles at all. Leaflet draws all of them; pins, the 300-mile ring
+// and the "~" region styling are this app's own overlay on top.
 const APPROX_NOTE = 'Approximate: USDA reports this as a region, and the pin is at a centre this app chose. Distance and the 300-mile cutoff are approximate too.';
 const isRegion = (r) => r.precision !== 'town';
 const tag = (r) => (r.report_status && r.report_status !== 'Final' ? ' <b class="warnTxt" title="Not final">PRELIM</b>' : '') + (r.bage > 1 ? ` <b class="warnTxt" title="Older than the latest business day">${r.bage}d old</b>` : '');
@@ -134,103 +134,94 @@ function loadScript(src, timeoutMs) {
   });
 }
 function setMapNotice(html) { const n = $('mapNotice'); n.hidden = !html; n.innerHTML = html || ''; }
-function setMapCredit(mode) {
+function setMapCredit(choice) {
   const el = $('mapCredit');
-  if (mode === 'google') el.innerHTML = '<span translate="no">Google Maps</span>: map features and content are provided by Google and your use of them is subject to the <a href="https://maps.google.com/help/terms_maps/">Google Maps/Google Earth Additional Terms of Service</a> and the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>. Bid pins, the ring and distances are this app’s own overlay, not Google data.';
-  else if (mode === 'osm-dev') el.innerHTML = 'Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors — development tiles on localhost only.';
+  if (choice && choice.mode !== 'blank') el.innerHTML = 'Map: ' + (choice.attribution || '') + '. Bid pins, the ring and distances are this app’s own overlay.';
   else el.textContent = 'No map tiles are loaded in this view.';
   $('legendBox').innerHTML = '<span class="dot solid"></span> town bid (sunflower processors) &nbsp; <span class="dot dashed"></span> region bid — pin is approximate (~) &nbsp; dashed ring ≈ 300 mi straight-line from Gann Valley';
 }
+const BLANK_NOTE = {
+  unconfigured: '<b>Map tiles not configured.</b> Pins and the 300-mile ring are drawn on a plain background. (Build <code>tiles/plains.pmtiles</code> with <code>./build_tiles.sh</code> or set <code>MAP_TILES_URL</code> — see README “Map”.)',
+  invalid: '<b>Map tiles not configured.</b> <code>MAP_TILES_URL</code> is not a valid tile source (relative path or https URL). Pins and the ring are drawn on a plain background.',
+  nokey: '<b>Map tiles not configured.</b> The tile URL needs a key (<code>MAP_TILES_KEY</code>) and none was injected at build. Pins and the ring are drawn on a plain background.',
+};
 async function initMap() {
   const choice = GrainMapMode.chooseMapMode(CFG, location.hostname);
-  setMapCredit(choice.mode);
-  if (choice.mode === 'google') {
-    try { MV = await googleView(choice.key); setMapNotice(''); return; }
-    catch (e) { await fallbackToBlank('Google Maps could not load (' + esc(e.message) + ').'); return; }
+  if (choice.mode === 'blank') {
+    setMapCredit(choice); MV = await leafletView(choice);
+    setMapNotice(BLANK_NOTE[choice.why] || BLANK_NOTE.unconfigured); return;
   }
-  MV = await leafletView(choice.mode === 'osm-dev');
-  if (choice.mode === 'blank') setMapNotice('<b>Map tiles not configured.</b> Pins and the 300-mile ring are drawn on a plain background. (Set <code>GOOGLE_MAPS_API_KEY</code> to show a Google map — see README.)');
-  else setMapNotice('Development map: OpenStreetMap public tiles on localhost only. They are not used on a public site.');
+  try {
+    MV = await leafletView(choice, (why) => fallbackToBlank(why));
+    setMapCredit(choice);
+    setMapNotice(choice.mode === 'osm-dev' ? 'Development map: OpenStreetMap public tiles on localhost only. They are not used on a public site.' : '');
+  } catch (e) { await fallbackToBlank(esc(e.message)); }
 }
+let fellBack = false;
 async function fallbackToBlank(why) {
+  if (fellBack) return; fellBack = true;
+  why = String(why).replace(/^./, (c) => c.toUpperCase()).replace(/[^.!?]$/, '$&.');
   try { MV && MV.destroy(); } catch (e) { }
-  $('map').innerHTML = ''; $('map').removeAttribute('style'); MV = null;
-  setMapCredit('blank');
-  MV = await leafletView(false);
+  $('map').innerHTML = ''; $('map').removeAttribute('style'); $('map').className = ''; MV = null;
+  const blank = { mode: 'blank' };
+  setMapCredit(blank);
+  MV = await leafletView(blank);
   setMapNotice('<b>Map tiles not available.</b> ' + why + ' Pins and the 300-mile ring are drawn on a plain background.');
   if (state.meta) renderMap();
 }
 
-async function leafletView(osm) {
+// Self-hosted PMTiles are read with HTTP Range requests. Check up front that the file is there AND the host really answers 206, so a host
+// without range support (e.g. Cloudflare Pages) gives a clear notice instead of a silently blank map.
+async function probePmtiles(url) {
+  const ac = new AbortController();
+  let r;
+  try { r = await fetch(url, { headers: { Range: 'bytes=0-1023' }, signal: ac.signal, cache: 'no-store' }); }
+  catch (e) { throw new Error('the map tile file could not be fetched'); }
+  try {
+    if (r.status === 404) throw new Error('the map tile file (' + url + ') is not on the server — build it with ./build_tiles.sh');
+    if (r.status === 200) throw new Error('the web host does not support HTTP Range requests (it answered 200, not 206) — see README “Map”');
+    if (r.status !== 206) throw new Error('the map tile file returned HTTP ' + r.status);
+    const head = new Uint8Array(await r.arrayBuffer()).slice(0, 7);
+    if (String.fromCharCode(...head) !== 'PMTiles') throw new Error('the map tile file is not a PMTiles archive');
+  } finally { ac.abort(); }
+}
+
+async function leafletView(choice, onFail) {
+  const tiled = choice.mode !== 'blank';
   if (!window.L) await loadScript('vendor/leaflet.js');
-  const map = L.map('map', { attributionControl: !!osm }).setView([CENTER.lat, CENTER.lon], 6);
-  if (osm) {
-    console.warn('Map tiles use the OpenStreetMap public servers, which are for development/light use only (localhost).');
-    L.tileLayer(CFG.TILE_URL, { maxZoom: CFG.TILE_MAX_ZOOM || 12, attribution: CFG.TILE_ATTRIBUTION || '' }).addTo(map);
+  if (choice.mode === 'pmtiles') {
+    await probePmtiles(choice.url);
+    if (!window.protomapsL) await loadScript('vendor/protomaps-leaflet.js');
+  }
+  const map = L.map('map', { attributionControl: tiled, maxZoom: tiled ? choice.maxZoom : 12 }).setView([CENTER.lat, CENTER.lon], 6);
+  if (choice.mode === 'osm-dev') console.warn('Map tiles use the OpenStreetMap public servers, which are for development/light use only (localhost).');
+  if (tiled) {
+    const layer = choice.mode === 'pmtiles'
+      ? protomapsL.leafletLayer({ url: choice.url, flavor: 'light', lang: 'en', maxDataZoom: choice.dataMaxZoom, attribution: choice.attribution })
+      : L.tileLayer(choice.url, { maxZoom: choice.maxZoom, attribution: choice.attribution });
+    let ok = 0, bad = 0;
+    layer.on('tileload', () => { ok++; });
+    layer.on('tileerror', () => { bad++; if (!ok && bad >= 4 && onFail) onFail('The map tiles failed to load.'); });
+    layer.addTo(map);
   } else $('map').classList.add('notiles');
   L.circle([CENTER.lat, CENTER.lon], { radius: RING_M, color: '#2f5d1f', weight: 1, fillOpacity: 0.03, dashArray: '6 6' }).addTo(map)
     .bindTooltip('About 300 miles, straight-line, from Gann Valley (approximate for region bids)', { sticky: true });
   L.marker([CENTER.lat, CENTER.lon]).addTo(map).bindPopup('Gann Valley, SD (center of the 300-mile ring)');
-  const layer = L.layerGroup().addTo(map);
+  const pins = L.layerGroup().addTo(map);
   return {
     kind: 'leaflet',
     setPins(items) {
-      layer.clearLayers();
+      pins.clearLayers();
       items.forEach(it => {
         it.row._pin = L.circleMarker([it.row.lat, it.row.lon], { radius: it.best ? 11 : 8, color: it.best ? '#000' : (it.region ? '#555' : '#fff'), weight: it.best ? 3 : 1.5,
           dashArray: it.region ? '3 3' : null, fillColor: it.color, fillOpacity: it.region ? 0.55 : 0.9 })
-          .bindTooltip(it.tip, { permanent: true, direction: 'top', offset: [0, -6], className: 'bidtip' }).bindPopup(it.html).addTo(layer);
+          .bindTooltip(it.tip, { permanent: true, direction: 'top', offset: [0, -6], className: 'bidtip' }).bindPopup(it.html).addTo(pins);
       });
     },
     focus(r) { map.setView([r.lat, r.lon], 8); r._pin && r._pin.openPopup(); },
     showMe(p) { L.circleMarker([p.lat, p.lon], { radius: 6, color: '#0645ad', fillColor: '#3b82f6', fillOpacity: 1 }).addTo(map).bindPopup('You'); },
     resize() { map.invalidateSize(); },
     destroy() { map.remove(); },
-  };
-}
-
-async function googleView(key) {
-  await new Promise((res, rej) => {
-    window.__grainGmapsReady = res;
-    loadScript(GrainMapMode.googleScriptUrl(key, '__grainGmapsReady')).catch(rej);
-  });
-  window.gm_authFailure = () => { fallbackToBlank('Google rejected the map key (check the key’s referrer and API restrictions in Google Cloud).'); };   // Google calls this on key/referrer errors
-  const { Map, Circle, InfoWindow } = await google.maps.importLibrary('maps');
-  const map = new Map($('map'), { center: { lat: CENTER.lat, lng: CENTER.lon }, zoom: 6, mapTypeControl: false, streetViewControl: false, clickableIcons: false, gestureHandling: 'cooperative' });
-  const ring = new Circle({ map, center: { lat: CENTER.lat, lng: CENTER.lon }, radius: RING_M, strokeColor: '#2f5d1f', strokeOpacity: 0.9, strokeWeight: 1.5, fillColor: '#2f5d1f', fillOpacity: 0.03, clickable: false });
-  map.fitBounds(ring.getBounds(), 4);
-  const info = new InfoWindow({ maxWidth: 300 });
-  // Pins are small HTML overlays (OverlayView): they work without a Map ID and are not the deprecated google.maps.Marker.
-  class Pin extends google.maps.OverlayView {
-    constructor(pos, cls, text, label, onClick, color) { super(); Object.assign(this, { pos, cls, text, label, onClick, color }); this.div = null; }
-    onAdd() {
-      const d = document.createElement('div'); d.className = 'gpin ' + this.cls; d.tabIndex = 0; d.setAttribute('role', 'button'); d.setAttribute('aria-label', this.label);
-      if (this.color) d.style.setProperty('--c', this.color);
-      d.innerHTML = '<span class="gdot"></span>' + (this.text ? '<span class="glbl">' + esc(this.text) + '</span>' : '');
-      const go = (e) => { e.stopPropagation(); this.onClick && this.onClick(); };
-      d.addEventListener('click', go); d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(e); } });
-      this.div = d; this.getPanes().overlayMouseTarget.appendChild(d);
-    }
-    draw() { const p = this.getProjection().fromLatLngToDivPixel(new google.maps.LatLng(this.pos.lat, this.pos.lng)); if (p && this.div) { this.div.style.left = p.x + 'px'; this.div.style.top = p.y + 'px'; } }
-    onRemove() { this.div && this.div.remove(); this.div = null; }
-  }
-  const open = (pos, html) => { info.setContent('<div class="gpop">' + html + '</div>'); info.setPosition(pos); info.open({ map }); };
-  new Pin({ lat: CENTER.lat, lng: CENTER.lon }, 'center', '', 'Gann Valley, SD, center of the 300-mile ring', () => open({ lat: CENTER.lat, lng: CENTER.lon }, 'Gann Valley, SD (center of the 300-mile ring)')).setMap(map);
-  let pins = [], me = null;
-  return {
-    kind: 'google',
-    setPins(items) {
-      pins.forEach(p => p.setMap(null)); pins = [];
-      items.forEach(it => {
-        const pos = { lat: it.row.lat, lng: it.row.lon };
-        const pin = new Pin(pos, (it.region ? 'region ' : 'town ') + (it.best ? 'best' : ''), it.tip, it.row.location + ', ' + it.tip, () => open(pos, it.html), it.color);
-        pin.setMap(map); pins.push(pin); it.row._pin = { openPopup: () => open(pos, it.html) };
-      });
-    },
-    focus(r) { map.panTo({ lat: r.lat, lng: r.lon }); map.setZoom(8); r._pin && r._pin.openPopup(); },
-    showMe(p) { me && me.setMap(null); me = new Pin({ lat: p.lat, lng: p.lon }, 'me', '', 'Your location', () => open({ lat: p.lat, lng: p.lon }, 'You')); me.setMap(map); },
-    resize() { google.maps.event.trigger(map, 'resize'); },
-    destroy() { pins.forEach(p => p.setMap(null)); },
   };
 }
 function popupHtml(r) {

@@ -5,18 +5,24 @@ window.GRAIN_CONFIG = {
   FUTURES_DISPLAY: 'full',
 
   // ---- Map ----
-  // Google Maps JavaScript API key (browser key). Leave EMPTY in git. Injected at build/serve time from the GOOGLE_MAPS_API_KEY
-  // environment variable / .env (see build_dist.sh, serve.sh, .env.example and README). This key is PUBLIC in the browser, so it MUST be
-  // restricted in Google Cloud: HTTP referrers (your site only) AND API restriction (Maps JavaScript API only).
-  // Empty => plain no-tile map (pins and the 300-mile ring on a plain background) with a "map tiles not configured" notice.
-  GOOGLE_MAPS_API_KEY: '',
+  // ONE setting chooses the map: MAP_TILES_URL.
+  //   'tiles/plains.pmtiles'  (default) self-hosted static Protomaps vector tiles, drawn in Leaflet by the vendored protomaps-leaflet. No account,
+  //                           no key, no third-party requests. Build the file once with ./build_tiles.sh (README "Map"). Your web host MUST
+  //                           answer HTTP Range requests with 206 (GitHub Pages and Netlify do; Cloudflare Pages does not, see README).
+  //   'https://.../{z}/{x}/{y}.png'  any raster XYZ provider (MapTiler, Stadia, Thunderforest ...). Put {key} in the URL if it needs a key;
+  //                           the key comes from MAP_TILES_KEY in .env, appended to dist/config.js at build time (never committed).
+  //   ''                      no tiles: pins + the 300-mile ring on a plain background and a "map tiles not configured" notice.
+  // If the tiles cannot be loaded (file missing, host without Range support, provider down) the page falls back to that plain map with a notice.
+  MAP_TILES_URL: 'tiles/plains.pmtiles',
+  MAP_TILES_KEY: '',                                   // leave EMPTY in git (see above)
+  // Attribution shown on the map and under it. OpenStreetMap contributors is REQUIRED (ODbL). For another provider, set its own text too.
+  MAP_TILES_ATTRIBUTION: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; <a href="https://github.com/protomaps/basemaps">Protomaps</a> basemap',
+  MAP_TILES_MAX_ZOOM: 10,                              // pmtiles extract is built to zoom 9 (overzoomed one level); raise for raster providers
+  PMTILES_DATA_MAX_ZOOM: 9,                            // must match --maxzoom in build_tiles.sh
 
-  // Development only: with NO Google key, draw OpenStreetMap tiles when the page is on localhost/127.0.0.1. Never used on any other host
-  // (OSM's public tile servers are for light/dev use only: https://operations.osmfoundation.org/policies/tiles/ ).
+  // Development only: with MAP_TILES_URL empty, draw OpenStreetMap's public tiles when the page is on localhost/127.0.0.1. Never on any other
+  // host (OSM's public tile servers forbid heavy/production use: https://operations.osmfoundation.org/policies/tiles/ ).
   DEV_OSM_TILES_ON_LOCALHOST: true,
-  TILE_URL: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  TILE_ATTRIBUTION: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  TILE_MAX_ZOOM: 12,
 
   // Synthetic demo data (?sample=1 and the fallback when real data is missing). MUST stay false in a public build.
   ALLOW_SAMPLE: false,

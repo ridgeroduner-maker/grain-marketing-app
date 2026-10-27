@@ -99,8 +99,9 @@ class ExportTests(unittest.TestCase):
         cfg = (PUBLIC / "config.js").read_text()
         self.assertRegex(cfg, r"FUTURES_DISPLAY:\s*'full'")
         self.assertRegex(cfg, r"ALLOW_SAMPLE:\s*false")
-        self.assertRegex(cfg, r"GOOGLE_MAPS_API_KEY:\s*''")          # never a committed key
-        self.assertIn("TILE_URL", cfg); self.assertRegex(cfg, r"DEV_OSM_TILES_ON_LOCALHOST:\s*true")
+        self.assertRegex(cfg, r"MAP_TILES_KEY:\s*''")          # never a committed key
+        self.assertRegex(cfg, r"MAP_TILES_URL:\s*'tiles/plains\.pmtiles'"); self.assertNotIn("GOOGLE", cfg.upper())
+        self.assertRegex(cfg, r"DEV_OSM_TILES_ON_LOCALHOST:\s*true")
         self.assertNotRegex(cfg, r"AIza[0-9A-Za-z_-]{20,}")
 
     def test_iowa_unplaced_row_is_stored_and_exported(self):

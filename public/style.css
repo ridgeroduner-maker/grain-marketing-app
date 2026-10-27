@@ -24,7 +24,7 @@ main{padding:12px 14px}
 .tablewrap{max-height:50vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
 th{position:sticky;top:0;background:#eef1e6}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-tr.row{cursor:pointer}tr.row:focus-visible,.tab:focus-visible,.tabs button:focus-visible,.gpin:focus-visible .gdot{outline:3px solid #0645ad;outline-offset:-2px}tr.row:hover{background:#f1f6ea}
+tr.row{cursor:pointer}tr.row:focus-visible,.tab:focus-visible,.tabs button:focus-visible{outline:3px solid #0645ad;outline-offset:-2px}tr.row:hover{background:#f1f6ea}
 .muted{color:var(--mut)}.small{font-size:12px}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
@@ -49,15 +49,7 @@ footer{padding:12px 14px 28px;color:var(--mut);font-size:12px}
 .maplegend .dot.dashed{border:1.5px dashed #555;background:#d9a40088}
 .card ol.ranked{list-style:none;padding-left:0}.card .big small{font-size:14px;font-weight:400}
 
-/* map: shared column, plain (no-tile) fallback, Google overlay pins */
+/* map: shared column, plain (no-tile) fallback */
 .mapcol{min-width:0}
 #map.notiles{background:#eef1e6}
 .banner.note{background:#fff4d6;color:#4a3b00;border:1px solid #e6c766;border-radius:8px;margin-bottom:6px}
-.gpin{position:absolute;width:0;height:0}
-.gpin .gdot{position:absolute;left:0;top:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--c,#2f5d1f);border:2px solid #fff;box-shadow:0 0 0 1px #0006;cursor:pointer;box-sizing:border-box}
-.gpin.region .gdot{border:2px dashed #555;background:color-mix(in srgb,var(--c,#2f5d1f) 55%,transparent)}
-.gpin.best .gdot{width:22px;height:22px;margin:-11px 0 0 -11px;border:3px solid #000}
-.gpin .glbl{position:absolute;left:0;bottom:12px;transform:translateX(-50%);background:#fffe;border:1px solid #0004;border-radius:4px;padding:0 4px;font-size:11px;font-weight:600;white-space:nowrap;pointer-events:none}
-.gpin.center .gdot{background:#d33;width:12px;height:12px;margin:-6px 0 0 -6px}
-.gpin.me .gdot{background:#3b82f6;border-color:#0645ad;width:12px;height:12px;margin:-6px 0 0 -6px}
-.gpop{font-size:13px;line-height:1.45;max-width:280px}
