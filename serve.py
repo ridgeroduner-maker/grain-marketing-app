@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""Local dev server for public/ on 127.0.0.1 (service workers work on localhost).
+If GOOGLE_MAPS_API_KEY is set (env or .env) it is APPENDED to the config.js response in memory, so the key never touches a tracked file.
+Without a key the app shows its plain no-tile map (and OSM dev tiles on localhost). Serves only; uploads nothing."""
+import functools, http.server, json, os, sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+
+
+def load_dotenv(path):
+    env = {}
+    if path.exists():
+        for line in path.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                env[k.strip()] = v.strip().strip('"').strip("'")
+    return env
+
+
+def config_suffix(key):
+    """JS appended to config.js to set the key (JSON-encoded, so quotes/backslashes cannot break out of the string)."""
+    key = (key or "").strip()
+    return f"\nwindow.GRAIN_CONFIG.GOOGLE_MAPS_API_KEY = {json.dumps(key)};\n" if key else ""
+
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    key = ""
+
+    def do_GET(self):
+        if self.path.split("?")[0].endswith("/config.js") or self.path.split("?")[0] == "/config.js":
+            body = (Path(self.directory) / "config.js").read_bytes() + config_suffix(self.key).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/javascript")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        return super().do_GET()
+
+
+if __name__ == "__main__":
+    key = os.environ.get("GOOGLE_MAPS_API_KEY") or load_dotenv(ROOT / ".env").get("GOOGLE_MAPS_API_KEY", "")
+    Handler.key = key
+    port = int(os.environ.get("PORT", "8765"))
+    h = functools.partial(Handler, directory=str(ROOT / "public"))
+    print(f"serving public/ on http://127.0.0.1:{port}  (Google Maps key: {'set' if key else 'NOT set -> plain map'})", file=sys.stderr)
+    http.server.ThreadingHTTPServer(("127.0.0.1", port), h).serve_forever()

@@ -28,29 +28,35 @@
   <label>Delivery <select id="selDelivery"></select></label>
 </section>
 
-<nav class="tabs" role="tablist">
-  <button role="tab" data-tab="map" aria-selected="true">Map</button>
-  <button role="tab" data-tab="best" aria-selected="false">Best bid near me</button>
-  <button role="tab" data-tab="alerts" aria-selected="false">Alerts</button>
-  <button role="tab" data-tab="history" aria-selected="false">History</button>
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button role="tab" id="t-map" data-tab="map" aria-controls="tab-map" aria-selected="true" tabindex="0">Map</button>
+  <button role="tab" id="t-best" data-tab="best" aria-controls="tab-best" aria-selected="false" tabindex="-1">Best bid near me</button>
+  <button role="tab" id="t-alerts" data-tab="alerts" aria-controls="tab-alerts" aria-selected="false" tabindex="-1">Alerts</button>
+  <button role="tab" id="t-history" data-tab="history" aria-controls="tab-history" aria-selected="false" tabindex="-1">History</button>
 </nav>
 
 <main>
-  <section id="tab-map" class="tab active">
+  <section id="tab-map" class="tab active" role="tabpanel" aria-labelledby="t-map" tabindex="0">
     <div class="split">
-      <div id="map" aria-label="Map of grain bid locations"></div>
+      <div class="mapcol">
+        <div id="mapNotice" class="banner note" role="status" hidden></div>
+        <div id="map" role="region" aria-label="Map of grain bid locations (the table beside it lists the same bids)"></div>
+        <p id="legendBox" class="small muted maplegend"></p>
+        <p id="mapCredit" class="small muted"></p>
+      </div>
       <div class="side">
         <h2>Bids <span id="mapCount" class="muted"></span></h2>
         <div class="tablewrap"><table id="bidTable"><thead><tr><th>Location</th><th>USDA bid range</th><th>Basis</th><th title="Straight-line miles, calculated by this app">Mi*</th><th>Posted (CT)</th></tr></thead><tbody></tbody></table></div>
         <p id="selNote" class="small muted"></p>
         <p class="small muted">* Mi = straight-line (as-the-crow-flies) miles from you (or Gann Valley) to the pin, calculated by this app; not driving distance. ~ = region bid, approximate pin.</p>
+        <div id="outsideNote" class="small"></div>
         <div id="unplaced" class="small"></div>
         <div id="futuresBox"></div>
       </div>
     </div>
   </section>
 
-  <section id="tab-best" class="tab">
+  <section id="tab-best" class="tab" role="tabpanel" aria-labelledby="t-best" tabindex="0">
     <p><button id="btnLocate" class="primary">Use my location</button>
        <span id="locStatus" class="muted">Default: Gann Valley, SD</span></p>
     <p><label>Sort <select id="selSort"><option value="high">Highest bid first</option><option value="near">Closest first</option></select></label> <label>Within <select id="selRadius"><option value="50">50 mi</option><option value="100">100 mi</option><option value="150">150 mi</option><option value="200">200 mi</option><option value="300" selected>300 mi</option><option value="9999">any</option></select> of me</label></p>
@@ -58,14 +64,14 @@
     <p class="muted small">Your location stays in this browser; it is never sent anywhere. <b>Distance is straight-line miles</b> (as the crow flies), not driving distance. Each bid is a USDA <i>range</i>; ranking uses the top of the range, which is this app’s own choice. Bids of different grades or freight terms (delivered vs FOB) are never mixed — pick the one you want in each card. Most bids are for a <b>region</b> and are drawn at an approximate region center (~), so distances are rough.</p>
   </section>
 
-  <section id="tab-alerts" class="tab">
+  <section id="tab-alerts" class="tab" role="tabpanel" aria-labelledby="t-alerts" tabindex="0">
     <h2>Price alerts</h2>
     <form id="alertForm" class="alertform">
-      <select id="aCommodity"></select>
-      <select id="aVariant"></select>
-      <select id="aLocation"></select>
-      <select id="aDir"><option value="gte">bid at or above</option><option value="lte">bid at or below</option></select>
-      <input id="aPrice" type="number" step="0.01" min="0" placeholder="price" required>
+      <label>Crop <select id="aCommodity"></select></label>
+      <label>Grade / freight <select id="aVariant"></select></label>
+      <label>Location <select id="aLocation"></select></label>
+      <label>Alert when <select id="aDir"><option value="gte">bid at or above</option><option value="lte">bid at or below</option></select></label>
+      <label>Price <input id="aPrice" type="number" step="0.01" min="0" placeholder="price" required></label>
       <button class="primary" type="submit">Add alert</button>
     </form>
     <div class="muted small" id="notifStatus"></div>
@@ -77,7 +83,7 @@
     </details>
   </section>
 
-  <section id="tab-history" class="tab">
+  <section id="tab-history" class="tab" role="tabpanel" aria-labelledby="t-history" tabindex="0">
     <div class="controls inline">
       <label>Location <select id="hLocation"></select></label>
       <label>Compare with <select id="hLocation2"></select></label>
@@ -92,10 +98,10 @@
   <p><b>Source: USDA Agricultural Marketing Service (AMS) Livestock, Poultry &amp; Grain Market News</b> — reports SD 3186, ND 3878, NE 3225, S. MN 3049, IA 2850, sunflowers 2887, at <a href="https://mymarketnews.ams.usda.gov/">mymarketnews.ams.usda.gov</a>. Reports are posted about 2 to 4 pm Central each business day; the “Posted” time is when USDA published each one. Bids are by region (not by elevator), except sunflowers, which USDA lists by processor town. This app is not affiliated with or endorsed by USDA.</p>
   <p><b>About USDA’s numbers:</b> USDA says price reporting is voluntary, reporters may exclude outliers, and basis may be figured from the current or the prior day’s close (paraphrased — see USDA’s report pages for its official wording). Futures settlements, when shown, are copied as printed in those USDA reports; they are not live quotes.</p>
   <p><b>Calculated by this app, not by USDA:</b> the “high end of range” used for ranking, “best”, straight-line distances, map pin positions (region pins are approximate), cents-to-dollars conversion of settlements, the exchange named on each basis (CBOT for corn and soybeans, MGE for spring wheat, KCBT for winter wheat), and changes since the previous report we loaded. Call your elevator to confirm any price. Not trading advice.</p>
-  <p>Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Maps by <a href="vendor/LICENSE-leaflet.txt">Leaflet</a> (BSD-2-Clause), charts by <a href="vendor/LICENSE-chartjs.txt">Chart.js</a> (MIT) — <a href="vendor/LICENSE-leaflet.txt">license texts</a>.</p>
+  <p>Map tiles, when shown, are Google Maps (key configured) — see the credit under the map. Plain fallback map by <a href="vendor/LICENSE-leaflet.txt">Leaflet</a> (BSD-2-Clause), charts by <a href="vendor/LICENSE-chartjs.txt">Chart.js</a> (MIT) — <a href="vendor/LICENSE-leaflet.txt">license texts</a>.</p>
 </footer>
 <script src="config.js"></script>
-<script src="vendor/leaflet.js"></script>
+<script src="mapmode.js"></script>
 <script src="vendor/chart.umd.js"></script>
 <script src="alerts-core.js"></script>
 <script src="app.js"></script>

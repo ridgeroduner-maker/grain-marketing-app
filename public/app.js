@@ -49,6 +49,7 @@ async function loadAll() {
     else throw new Error('No bid data is available yet (' + e.message + '). Please try again later.');
   }
   [state.latest, state.history, state.futures] = await Promise.all([loadJSON('latest.json'), loadJSON('history.json'), loadJSON('futures.json')]);
+  try { state.outside = await loadJSON('outside.json'); } catch (e) { state.outside = []; }     // older exports have none
   $('sampleBanner').hidden = !state.meta.sample;
   const today = chicagoToday();
   state.latest.forEach(r => { r.bage = bdaysBetween(r.report_date, today); });
@@ -76,8 +77,12 @@ function renderStatus() {
   const prelim = reps.filter(([, t]) => t.status && t.status !== 'Final').map(([k]) => k.replace('AMS_', ''));
   const last = m.last_ingest_ok_at || m.generated_at;
   msgs.push(`Newest USDA reports: <b>${esc(m.latest_report_date)}</b> (${reps.length ? (prelim.length ? 'some PRELIMINARY' : 'all Final') : 'status unknown'}). ` +
-    `Last successful data update: <b>${esc(last ? last.replace('T', ' ') : 'unknown')}</b> (${esc(ago(last))}, server time).`);
+    `Last successful data update: <b>${esc(last ? fmtPosted(last) : 'unknown')}</b> (${esc(ago(last))}; Central Time).`);
   if (prelim.length) warn.push('Preliminary reports (' + esc(prelim.join(', ')) + ') can change when USDA finalizes them.');
+  // Per-report staleness: flag ANY single report that is 2+ business days old, even when others are current (e.g. only ND aged).
+  const stale = reps.map(([k, t]) => ({ name: t.label || k, date: t.report_date, b: bdaysBetween(t.report_date, chicagoToday()) })).filter(x => x.b >= 2);
+  if (stale.length && stale.length < reps.length) warn.push(`${stale.map(x => esc(x.name) + ' (report date ' + esc(x.date) + ', ' + x.b + ' business days old)').join('; ')} ${stale.length === 1 ? 'is' : 'are'} out of date while other reports are newer. ` +
+    'Those bids are tagged “Nd old” and left out of “Best bid near me” rankings, and alerts ignore them.');
   if (ageB >= 2) warn.push(`These reports are ${ageB} business days old — newer ones may be out and not yet loaded. Do not rely on these prices.`);
   else if (ageB === 1) msgs.push('Today’s reports are usually posted about 2 to 4 pm Central.');
   if (state.fromCache || navigator.onLine === false) warn.push(`You appear to be offline — this is a copy saved on your device. The data was generated ${esc(ago(m.generated_at))}.`);
@@ -111,22 +116,122 @@ function onVariant() {
 function renderAll() { renderMap(); renderTable(); renderFutures(); renderHistorySelectors(); renderBest(); }
 
 // ---------- map ----------
+// Three modes (see mapmode.js): Google Maps JavaScript API when a key is configured; otherwise Leaflet with no tiles
+// (pins + ring on a plain background), or OSM tiles on localhost for development only. Google content is never put in Leaflet
+// and Leaflet is never put near a Google map: only one engine is created per page.
 const APPROX_NOTE = 'Approximate: USDA reports this as a region, and the pin is at a centre this app chose. Distance and the 300-mile cutoff are approximate too.';
 const isRegion = (r) => r.precision !== 'town';
 const tag = (r) => (r.report_status && r.report_status !== 'Final' ? ' <b class="warnTxt" title="Not final">PRELIM</b>' : '') + (r.bage > 1 ? ` <b class="warnTxt" title="Older than the latest business day">${r.bage}d old</b>` : '');
-function initMap() {
-  state.map = L.map('map').setView([CENTER.lat, CENTER.lon], 6);
-  if (CFG.TILE_IS_DEV_ONLY && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
-    console.warn('Map tiles use the OpenStreetMap public servers, which are for development/light use only. Change TILE_URL in config.js before a public launch.');
+const RING_M = 300 * 1609.344;
+let MV = null;                                      // active map adapter
+
+function loadScript(src, timeoutMs) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = src; s.async = true;
+    const t = setTimeout(() => rej(new Error('timed out')), timeoutMs || 15000);
+    s.onload = () => { clearTimeout(t); res(); }; s.onerror = () => { clearTimeout(t); rej(new Error('could not load ' + new URL(src, location.href).host)); };
+    document.head.appendChild(s);
+  });
+}
+function setMapNotice(html) { const n = $('mapNotice'); n.hidden = !html; n.innerHTML = html || ''; }
+function setMapCredit(mode) {
+  const el = $('mapCredit');
+  if (mode === 'google') el.innerHTML = '<span translate="no">Google Maps</span>: map features and content are provided by Google and your use of them is subject to the <a href="https://maps.google.com/help/terms_maps/">Google Maps/Google Earth Additional Terms of Service</a> and the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>. Bid pins, the ring and distances are this app’s own overlay, not Google data.';
+  else if (mode === 'osm-dev') el.innerHTML = 'Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors — development tiles on localhost only.';
+  else el.textContent = 'No map tiles are loaded in this view.';
+  $('legendBox').innerHTML = '<span class="dot solid"></span> town bid (sunflower processors) &nbsp; <span class="dot dashed"></span> region bid — pin is approximate (~) &nbsp; dashed ring ≈ 300 mi straight-line from Gann Valley';
+}
+async function initMap() {
+  const choice = GrainMapMode.chooseMapMode(CFG, location.hostname);
+  setMapCredit(choice.mode);
+  if (choice.mode === 'google') {
+    try { MV = await googleView(choice.key); setMapNotice(''); return; }
+    catch (e) { await fallbackToBlank('Google Maps could not load (' + esc(e.message) + ').'); return; }
   }
-  L.tileLayer(CFG.TILE_URL, { maxZoom: CFG.TILE_MAX_ZOOM || 12, attribution: CFG.TILE_ATTRIBUTION || '' }).addTo(state.map);
-  L.circle([CENTER.lat, CENTER.lon], { radius: 300 * 1609.344, color: '#2f5d1f', weight: 1, fillOpacity: 0.03, dashArray: '6 6' }).addTo(state.map)
+  MV = await leafletView(choice.mode === 'osm-dev');
+  if (choice.mode === 'blank') setMapNotice('<b>Map tiles not configured.</b> Pins and the 300-mile ring are drawn on a plain background. (Set <code>GOOGLE_MAPS_API_KEY</code> to show a Google map — see README.)');
+  else setMapNotice('Development map: OpenStreetMap public tiles on localhost only. They are not used on a public site.');
+}
+async function fallbackToBlank(why) {
+  try { MV && MV.destroy(); } catch (e) { }
+  $('map').innerHTML = ''; $('map').removeAttribute('style'); MV = null;
+  setMapCredit('blank');
+  MV = await leafletView(false);
+  setMapNotice('<b>Map tiles not available.</b> ' + why + ' Pins and the 300-mile ring are drawn on a plain background.');
+  if (state.meta) renderMap();
+}
+
+async function leafletView(osm) {
+  if (!window.L) await loadScript('vendor/leaflet.js');
+  const map = L.map('map', { attributionControl: !!osm }).setView([CENTER.lat, CENTER.lon], 6);
+  if (osm) {
+    console.warn('Map tiles use the OpenStreetMap public servers, which are for development/light use only (localhost).');
+    L.tileLayer(CFG.TILE_URL, { maxZoom: CFG.TILE_MAX_ZOOM || 12, attribution: CFG.TILE_ATTRIBUTION || '' }).addTo(map);
+  } else $('map').classList.add('notiles');
+  L.circle([CENTER.lat, CENTER.lon], { radius: RING_M, color: '#2f5d1f', weight: 1, fillOpacity: 0.03, dashArray: '6 6' }).addTo(map)
     .bindTooltip('About 300 miles, straight-line, from Gann Valley (approximate for region bids)', { sticky: true });
-  L.marker([CENTER.lat, CENTER.lon]).addTo(state.map).bindPopup('Gann Valley, SD (center of the 300-mile ring)');
-  state.layer = L.layerGroup().addTo(state.map);
-  const legend = L.control({ position: 'bottomleft' });
-  legend.onAdd = () => { const d = L.DomUtil.create('div', 'maplegend'); d.innerHTML = '<span class="dot solid"></span> town bid (sunflower processors)<br><span class="dot dashed"></span> region bid — pin is approximate<br>dashed ring ≈ 300 mi straight-line'; return d; };
-  legend.addTo(state.map);
+  L.marker([CENTER.lat, CENTER.lon]).addTo(map).bindPopup('Gann Valley, SD (center of the 300-mile ring)');
+  const layer = L.layerGroup().addTo(map);
+  return {
+    kind: 'leaflet',
+    setPins(items) {
+      layer.clearLayers();
+      items.forEach(it => {
+        it.row._pin = L.circleMarker([it.row.lat, it.row.lon], { radius: it.best ? 11 : 8, color: it.best ? '#000' : (it.region ? '#555' : '#fff'), weight: it.best ? 3 : 1.5,
+          dashArray: it.region ? '3 3' : null, fillColor: it.color, fillOpacity: it.region ? 0.55 : 0.9 })
+          .bindTooltip(it.tip, { permanent: true, direction: 'top', offset: [0, -6], className: 'bidtip' }).bindPopup(it.html).addTo(layer);
+      });
+    },
+    focus(r) { map.setView([r.lat, r.lon], 8); r._pin && r._pin.openPopup(); },
+    showMe(p) { L.circleMarker([p.lat, p.lon], { radius: 6, color: '#0645ad', fillColor: '#3b82f6', fillOpacity: 1 }).addTo(map).bindPopup('You'); },
+    resize() { map.invalidateSize(); },
+    destroy() { map.remove(); },
+  };
+}
+
+async function googleView(key) {
+  await new Promise((res, rej) => {
+    window.__grainGmapsReady = res;
+    loadScript(GrainMapMode.googleScriptUrl(key, '__grainGmapsReady')).catch(rej);
+  });
+  window.gm_authFailure = () => { fallbackToBlank('Google rejected the map key (check the key’s referrer and API restrictions in Google Cloud).'); };   // Google calls this on key/referrer errors
+  const { Map, Circle, InfoWindow } = await google.maps.importLibrary('maps');
+  const map = new Map($('map'), { center: { lat: CENTER.lat, lng: CENTER.lon }, zoom: 6, mapTypeControl: false, streetViewControl: false, clickableIcons: false, gestureHandling: 'cooperative' });
+  const ring = new Circle({ map, center: { lat: CENTER.lat, lng: CENTER.lon }, radius: RING_M, strokeColor: '#2f5d1f', strokeOpacity: 0.9, strokeWeight: 1.5, fillColor: '#2f5d1f', fillOpacity: 0.03, clickable: false });
+  map.fitBounds(ring.getBounds(), 4);
+  const info = new InfoWindow({ maxWidth: 300 });
+  // Pins are small HTML overlays (OverlayView): they work without a Map ID and are not the deprecated google.maps.Marker.
+  class Pin extends google.maps.OverlayView {
+    constructor(pos, cls, text, label, onClick, color) { super(); Object.assign(this, { pos, cls, text, label, onClick, color }); this.div = null; }
+    onAdd() {
+      const d = document.createElement('div'); d.className = 'gpin ' + this.cls; d.tabIndex = 0; d.setAttribute('role', 'button'); d.setAttribute('aria-label', this.label);
+      if (this.color) d.style.setProperty('--c', this.color);
+      d.innerHTML = '<span class="gdot"></span>' + (this.text ? '<span class="glbl">' + esc(this.text) + '</span>' : '');
+      const go = (e) => { e.stopPropagation(); this.onClick && this.onClick(); };
+      d.addEventListener('click', go); d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(e); } });
+      this.div = d; this.getPanes().overlayMouseTarget.appendChild(d);
+    }
+    draw() { const p = this.getProjection().fromLatLngToDivPixel(new google.maps.LatLng(this.pos.lat, this.pos.lng)); if (p && this.div) { this.div.style.left = p.x + 'px'; this.div.style.top = p.y + 'px'; } }
+    onRemove() { this.div && this.div.remove(); this.div = null; }
+  }
+  const open = (pos, html) => { info.setContent('<div class="gpop">' + html + '</div>'); info.setPosition(pos); info.open({ map }); };
+  new Pin({ lat: CENTER.lat, lng: CENTER.lon }, 'center', '', 'Gann Valley, SD, center of the 300-mile ring', () => open({ lat: CENTER.lat, lng: CENTER.lon }, 'Gann Valley, SD (center of the 300-mile ring)')).setMap(map);
+  let pins = [], me = null;
+  return {
+    kind: 'google',
+    setPins(items) {
+      pins.forEach(p => p.setMap(null)); pins = [];
+      items.forEach(it => {
+        const pos = { lat: it.row.lat, lng: it.row.lon };
+        const pin = new Pin(pos, (it.region ? 'region ' : 'town ') + (it.best ? 'best' : ''), it.tip, it.row.location + ', ' + it.tip, () => open(pos, it.html), it.color);
+        pin.setMap(map); pins.push(pin); it.row._pin = { openPopup: () => open(pos, it.html) };
+      });
+    },
+    focus(r) { map.panTo({ lat: r.lat, lng: r.lon }); map.setZoom(8); r._pin && r._pin.openPopup(); },
+    showMe(p) { me && me.setMap(null); me = new Pin({ lat: p.lat, lng: p.lon }, 'me', '', 'Your location', () => open({ lat: p.lat, lng: p.lon }, 'You')); me.setMap(map); },
+    resize() { google.maps.event.trigger(map, 'resize'); },
+    destroy() { pins.forEach(p => p.setMap(null)); },
+  };
 }
 function popupHtml(r) {
   const chg = r.prev_bid_high != null ? (r.bid_high - r.prev_bid_high) : null;
@@ -139,16 +244,10 @@ function popupHtml(r) {
     (state.meta.sample ? '<br><b>SAMPLE</b>' : '');
 }
 function renderMap() {
-  state.layer.clearLayers();
+  if (!MV) return;
   const rows = filtered(), best = rows.reduce((m, r) => !m || r.bid_high > m.bid_high ? r : m, null);
   const color = COLORS[$('selCommodity').value] || '#2f5d1f';
-  rows.forEach(r => {
-    const reg = isRegion(r);
-    const m = L.circleMarker([r.lat, r.lon], { radius: r === best ? 11 : 8, color: r === best ? '#000' : (reg ? '#555' : '#fff'), weight: r === best ? 3 : 1.5,
-      dashArray: reg ? '3 3' : null, fillColor: color, fillOpacity: reg ? 0.55 : 0.9 })
-      .bindTooltip((reg ? '~' : '') + money(r, r.bid_high), { permanent: true, direction: 'top', offset: [0, -6], className: 'bidtip' }).bindPopup(popupHtml(r));
-    r._m = m; m.addTo(state.layer);
-  });
+  MV.setPins(rows.map(r => ({ row: r, best: r === best, region: isRegion(r), color, tip: (isRegion(r) ? '~' : '') + money(r, r.bid_high), html: popupHtml(r) })));
 }
 function renderTable() {
   const f = curFilter();
@@ -158,7 +257,12 @@ function renderTable() {
   $('selNote').innerHTML = first ? `Grade: <b>${esc(first.grade)}</b>${first.protein ? ' · ' + esc(first.protein) : ''} · Freight: <b>${esc(first.freight_label)}</b>. Other grades and freight terms are separate choices in “Product”.` : '';
   $('bidTable').querySelector('tbody').innerHTML = rows.map((r, i) =>
     `<tr class="row" data-i="${i}"><td>${esc(r.location)}${isRegion(r) ? ' <span class="muted" title="' + esc(APPROX_NOTE) + '">~</span>' : ''}${tag(r)}</td><td class="n">${range(r)}</td><td>${esc(basisTxt(r))}</td><td class="n">${Math.round(haversine(pos.lat, pos.lon, r.lat, r.lon))}</td><td class="small">${esc(r.posted_at ? fmtPosted(r.posted_at).replace(/^\w+, /, '') : postedLbl(r))}</td></tr>`).join('') || '<tr><td colspan="5">No bids for this selection.</td></tr>';
-  $('bidTable').querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { const r = rows[tr.dataset.i]; state.map.setView([r.lat, r.lon], 8); r._m && r._m.openPopup(); });
+  $('bidTable').querySelectorAll('tr.row').forEach(tr => {
+    const go = () => { const r = rows[tr.dataset.i]; MV && MV.focus(r); };
+    tr.onclick = go; tr.tabIndex = 0; tr.setAttribute('aria-label', 'Show ' + rows[tr.dataset.i].location + ' on the map');
+    tr.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+  });
+  renderOutside(f);
   const sk = (state.meta.skipped_rows || []).filter(x => x.commodity === f.commodity);
   $('unplaced').innerHTML = sk.length ? `<details open><summary>${sk.length} USDA bid(s) cannot be placed on the map</summary><ul>` +
     sk.map(x => `<li>${esc(x.state || '')} ${esc(x.section)}: ${esc(x.heading)} — $${x.bid_low}–$${x.bid_high} ${x.unit === '$/Cwt' ? '/cwt' : '/bu'}, delivery ${esc(x.delivery)} (${esc(x.source_report)}, ${esc(x.report_date)}). USDA’s report gives no region for this row, so it is listed here instead of on the map or in rankings.</li>`).join('') + '</ul></details>' : '';
@@ -184,9 +288,11 @@ function renderBest() {
     const sel = document.querySelector(`select[data-best="${c}"]`);
     const variant = sel ? sel.value : defaultVariant(c);
     const cmp = sortMode === 'near' ? (a, b) => a.dist - b.dist : (a, b) => b.bid_high - a.bid_high || a.dist - b.dist;
-    const rows = state.latest.filter(r => r.commodity === c && r.variant === variant && r.delivery === 'Current')
-      .map(r => Object.assign({}, r, { dist: haversine(pos.lat, pos.lon, r.lat, r.lon) })).filter(r => r.dist <= rad)
-      .sort(cmp);
+    const inVariant = state.latest.filter(r => r.commodity === c && r.variant === variant && r.delivery === 'Current')
+      .map(r => Object.assign({}, r, { dist: haversine(pos.lat, pos.lon, r.lat, r.lon) })).filter(r => r.dist <= rad);
+    // Best bid only ranks bids from a report at most 1 business day old; older ones are named in a note, never ranked.
+    const rows = inVariant.filter(r => r.bage <= 1).sort(cmp);
+    const staleRows = inVariant.filter(r => r.bage > 1);
     const top = rows[0];
     const line = (r, n) => `<li><b>#${n}</b> ${esc(r.location)}${isRegion(r) ? '<span class="muted">~</span>' : ''}: ${range(r)}${unitLbl(r)} · <b>${Math.round(r.dist)} mi</b> straight-line <span class="muted small">(${esc(postedLbl(r))})</span>${tag(r)}</li>`;
     cards.push(`<div class="card"><h3>${esc(state.meta.commodities[c])}</h3>
@@ -197,10 +303,27 @@ function renderBest() {
         <div class="muted small">Ranked by the top of USDA’s range (${money(top, top.bid_high)}) — the app’s own reading. Basis ${esc(basisTxt(top))} · USDA AMS ${esc(top.source_report)} for ${top.report_date} (${esc(top.report_status || 'status n/a')}), ${esc(postedLbl(top))}</div>${tag(top)}
         <div class="small confirm">☎ ${esc(CONFIRM_NOTE)}</div>
         <ol class="ranked" start="2">${rows.slice(1, 4).map((r, i) => line(r, i + 2)).join('')}</ol>`
-        : `<p class="muted">No current bids within ${rad > 9000 ? 'range' : rad + ' mi'}.</p>`) + '</div>');
+        : `<p class="muted">No ${staleRows.length ? 'up-to-date ' : 'current '}bids within ${rad > 9000 ? 'range' : rad + ' mi'}.</p>`) +
+      (staleRows.length ? `<div class="small warnTxt">⚠ Not ranked, report more than 1 business day old: ${staleRows.map(r => esc(r.location) + ' (' + range(r) + ', report ' + esc(r.report_date) + ', ' + r.bage + ' business days old)').join('; ')}.</div>` : '') +
+      unplacedHigher(c, variant, top) + '</div>');
   }
   $('bestCards').innerHTML = cards.join('');
   $('bestCards').querySelectorAll('select[data-best]').forEach(s => s.onchange = renderBest);
+}
+// Bids USDA printed with no region (so they cannot be placed or ranked) that beat the best placed bid: say so on the card.
+// Derived from export skipped_rows; matched to the card's grade and freight when those are known.
+function unplacedHigher(c, variant, top) {
+  const hits = (state.meta.skipped_rows || []).filter(x => x.commodity === c && x.delivery === 'Current' && (!x.variant || x.variant === variant) && (!top || x.bid_high > top.bid_high));
+  if (!hits.length) return '';
+  return hits.map(x => `<div class="small warnTxt">⚠ A higher USDA bid exists that is not ranked: ${esc(x.state || '')} ${esc(x.section)}, ${esc(x.heading)}, <b>${money(x, x.bid_low)}–${money(x, x.bid_high)}</b>${unitLbl(x)} (${esc(x.source_report)}, ${esc(x.report_date)}). USDA gives no region for it, so its distance is unknown. Call to confirm.</div>`).join('');
+}
+// Bids whose region centre is just beyond the 300-mile ring: shown here, not pinned or ranked (listing, not a recommendation).
+function renderOutside(f) {
+  const items = (state.outside || []).filter(x => x.commodity === f.commodity && x.variant === f.variant && x.delivery === f.delivery).sort((a, b) => a.distance_mi - b.distance_mi);
+  $('outsideNote').innerHTML = items.length ? `<details open><summary>${items.length} USDA bid(s) just outside your radius</summary>
+    <p class="muted">These are located a little beyond 300 miles (straight-line from Gann Valley; ~ = region, approximate centre), so they are not pinned or ranked. Part of a region may still be nearer. Shown so a close bid is not hidden.</p><ul>` +
+    items.map(x => `<li>${esc(x.location)}${x.approximate ? ' ~' : ''}: <b>${money(x, x.bid_low)}${x.bid_high !== x.bid_low ? '–' + money(x, x.bid_high) : ''}</b>${unitLbl(x)} · about ${Math.round(x.distance_mi)} mi ${x.approximate ? ' (approximate)' : ''} · ${esc(x.freight_label || '')} · USDA ${esc(x.source_report)} ${esc(x.report_date)}${x.posted_at ? ', posted ' + esc(fmtPosted(x.posted_at)) : ''}</li>`).join('') +
+    '</ul></details>' : '';
 }
 function locate() {
   if (!navigator.geolocation) { $('locStatus').textContent = 'Geolocation not supported; using Gann Valley.'; return; }
@@ -209,7 +332,7 @@ function locate() {
     state.me = { lat: p.coords.latitude, lon: p.coords.longitude };
     localStorage.setItem('grain.me', JSON.stringify(state.me));
     $('locStatus').textContent = `Using your location (${state.me.lat.toFixed(2)}, ${state.me.lon.toFixed(2)}) — stored on this device only.`;
-    L.circleMarker([state.me.lat, state.me.lon], { radius: 6, color: '#0645ad', fillColor: '#3b82f6', fillOpacity: 1 }).addTo(state.map).bindPopup('You');
+    MV && MV.showMe(state.me);
     renderTable(); renderBest();
   }, err => { $('locStatus').textContent = 'Location unavailable (' + err.message + '). Using Gann Valley.'; }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 });
 }
@@ -249,7 +372,7 @@ async function notify(title, body, tag) {
   return true;
 }
 async function checkAlerts(manual) {
-  const al = loadAlerts(), fired = GrainAlerts.evaluate(al, state.latest.filter(r => r.bage <= 2));   // never alert on stale rows
+  const al = loadAlerts(), fired = GrainAlerts.evaluate(al, GrainAlerts.freshRows(state.latest, GrainAlerts.MAX_ALERT_AGE_BDAYS));   // never alert on stale rows (same rule as sw.js)
   for (const f of fired) {
     const ok = await notify(f.title, f.body, 'alert-' + f.alert.id);
     if (ok || manual) { al.find(a => a.id === f.alert.id).lastFiredDate = f.row.report_date; }
@@ -306,10 +429,15 @@ function renderChart() {
 
 // ---------- tabs / install / sw ----------
 function initTabs() {
-  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
-    document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  const tabs = [...document.querySelectorAll('.tabs button')];
+  tabs.forEach((b, i) => b.onkeydown = (e) => {          // arrow keys / Home / End move between tabs (WAI-ARIA tabs pattern)
+    const j = { ArrowRight: (i + 1) % tabs.length, ArrowLeft: (i + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 }[e.key];
+    if (j != null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+  });
+  tabs.forEach(b => b.onclick = () => {
+    tabs.forEach(x => { x.setAttribute('aria-selected', x === b); x.tabIndex = x === b ? 0 : -1; });
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + b.dataset.tab));
-    if (b.dataset.tab === 'map') setTimeout(() => state.map.invalidateSize(), 50);
+    if (b.dataset.tab === 'map') setTimeout(() => MV && MV.resize(), 50);
     if (b.dataset.tab === 'history') renderChart();
   });
 }
@@ -329,7 +457,7 @@ async function registerSW() {
   try {
     try { state.me = JSON.parse(localStorage.getItem('grain.me') || 'null'); } catch (e) { }
     await loadAll();
-    initTabs(); initMap(); initFilters(); initAlerts(); renderStatus();
+    initTabs(); await initMap(); initFilters(); initAlerts(); renderStatus();
     window.addEventListener('online', renderStatus); window.addEventListener('offline', renderStatus);
     $('btnLocate').onclick = locate; $('selRadius').onchange = renderBest; $('selSort').onchange = renderBest;
     $('hLocation').onchange = renderChart; $('hLocation2').onchange = renderChart; $('hRange').onchange = renderChart;
