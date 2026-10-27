@@ -47,6 +47,15 @@ def upsert(con, bids, futures, source_label, slug_state, report_date_for_unlocat
         stats["futures"] += 1
     return stats
 
+def store_skipped(con, skipped):
+    """Persist (and print) in-scope rows that could not be placed, instead of dropping them silently."""
+    for reason, b in skipped:
+        con.execute("INSERT OR REPLACE INTO skipped_rows VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    (b["report_date"], b["source_report"], b.get("state"), b["commodity"], b.get("heading"), b["section"],
+                     b["bid_low"], b["bid_high"], b["unit"], b["delivery"], reason))
+        print(f"  SKIPPED ({reason}): {b['source_report']} {b['commodity']} {b['section']} {b['bid_low']}-{b['bid_high']} {b['unit']} [{b.get('heading')}]")
+    return len(skipped)
+
 def run(source, date_iso, backfill_days, export):
     con = db.connect()
     started = datetime.datetime.now().isoformat(timespec="seconds")
@@ -67,6 +76,9 @@ def run(source, date_iso, backfill_days, export):
                     raise
                 print(f"  [{slug}] PDF unavailable ({e}); continuing with API only", file=sys.stderr)
             bids = parsed["bids"] if (parsed and not use_mars) else []
+            if parsed and not use_mars and not bids and slug not in config.MAY_BE_EMPTY:
+                raise ValueError(f"report {slug} parsed to zero in-scope bids (layout change?)")
+            skipped = parsed["skipped"] if (parsed and not use_mars) else []
             futs = []
             if parsed:
                 futs = [dict(f, report_date=parsed["report_date"], source_report=f"AMS_{slug}") for f in parsed["futures"]]
@@ -76,22 +88,27 @@ def run(source, date_iso, backfill_days, export):
                     rows = mars_api.fetch_report_range(slug, (end - datetime.timedelta(days=backfill_days)).isoformat(), end.isoformat())
                 else:
                     rows = mars_api.fetch_report_detail(slug, date_iso)
-                bids, _ = mars_api.normalize_rows(rows, slug, title, state)
+                bids, skipped = mars_api.normalize_rows(rows, slug, title, state)
+            n_skipped = store_skipped(con, skipped)
             rd0 = parsed["report_date"] if parsed else date_iso
             posted = parse_pdf.fetch_posted_at(slug, rd0) if rd0 else None
             st = upsert(con, bids, futs, "mars" if use_mars else "pdf", state,
                         posted_at=posted, status=(parsed or {}).get("status"))
             rd = parsed["report_date"] if parsed else date_iso
-            line = f"AMS_{slug} {title[:38]:38} date={rd} parsed={len(bids)} {st}"
+            line = f"AMS_{slug} {title[:38]:38} date={rd} parsed={len(bids)} skipped={n_skipped} {st}"
             print(line); summary.append(line)
         except Exception as e:
             failures += 1
             traceback.print_exc()
             summary.append(f"AMS_{slug} FAILED: {e}")
-    con.execute("INSERT INTO ingest_runs(started_at,finished_at,source,summary) VALUES (?,?,?,?)",
-                (started, datetime.datetime.now().isoformat(timespec="seconds"), "mars" if use_mars else "pdf", "\n".join(summary)))
+    con.execute("INSERT INTO ingest_runs(started_at,finished_at,source,summary,ok) VALUES (?,?,?,?,?)",
+                (started, datetime.datetime.now().isoformat(timespec="seconds"), "mars" if use_mars else "pdf",
+                 "\n".join(summary), 0 if failures else 1))
     con.commit()
-    if export:
+    if export and failures:
+        print(f"NOT EXPORTING: {failures} report(s) failed to parse; public/data/ left as it was "
+              "(the app will show its age). Fix the parser/report and re-run.", file=sys.stderr)
+    elif export:
         from . import export_json
         export_json.export(con, config.ROOT / "public" / "data", sample=False)
     return failures

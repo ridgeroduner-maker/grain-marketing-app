@@ -56,3 +56,25 @@ REGION_FRACTIONS = {
     "west": (0.15, 0.50), "central": (0.50, 0.50), "east central": (0.75, 0.50), "east": (0.88, 0.50),
     "southwest": (0.20, 0.20), "south central": (0.50, 0.20), "south": (0.50, 0.15), "southeast": (0.80, 0.20),
 }
+
+# ---- Display / data-quality settings -------------------------------------------------
+# FUTURES_DISPLAY lives in ONE place: public/config.js (the browser reads it there; export reads it here).
+#   full       = show USDA-printed futures settlement dollars (default; accepted Oct 27 2026, see README Decisions)
+#   basis_only = hide futures dollar settlements (futures.json is exported empty) and show basis only
+# Override for a single run with env GRAIN_FUTURES_DISPLAY=basis_only|full.
+def futures_display():
+    import re
+    v = os.environ.get("GRAIN_FUTURES_DISPLAY")
+    if not v:
+        m = re.search(r"FUTURES_DISPLAY\s*:\s*['\"](\w+)['\"]", (ROOT / "public" / "config.js").read_text())
+        v = m.group(1) if m else "full"
+    if v not in ("full", "basis_only"):
+        raise ValueError(f"FUTURES_DISPLAY must be 'full' or 'basis_only', got {v!r}")
+    return v
+
+# Rows from a report older than this many calendar days (vs today) are not exported at all.
+STALE_EXPIRE_DAYS = 7
+# Reports that may legitimately parse to zero in-scope bids (all others: zero bids => treated as a parse failure).
+MAY_BE_EMPTY = {2887}
+# Futures exchange that each commodity's basis is quoted against (Data Scout spec s4; arithmetic-verified by Reviewer).
+BASIS_EXCHANGE = {"corn": "CBOT", "soybeans": "CBOT", "spring_wheat": "MGE", "winter_wheat": "KCBT"}

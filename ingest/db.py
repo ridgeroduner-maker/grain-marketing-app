@@ -43,7 +43,12 @@ CREATE TABLE IF NOT EXISTS unlocated (       -- rows we could not place on the m
   PRIMARY KEY(report_date, source_report, state, name, section)
 );
 CREATE TABLE IF NOT EXISTS ingest_runs (
-  id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, source TEXT, summary TEXT
+  id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, source TEXT, summary TEXT, ok INTEGER
+);
+CREATE TABLE IF NOT EXISTS skipped_rows (    -- in-scope bids the parser could not place (e.g. no region text); shown in the UI
+  report_date TEXT, source_report TEXT, state TEXT, commodity TEXT, heading TEXT, section TEXT,
+  bid_low REAL, bid_high REAL, unit TEXT, delivery TEXT, reason TEXT,
+  PRIMARY KEY(report_date, source_report, commodity, heading, section, delivery, bid_low, bid_high)
 );
 """
 
@@ -67,7 +72,7 @@ def connect(path=None):
 def _migrate(con):
     """Add columns introduced after the first build to pre-existing local databases; (re)create the view."""
     def cols(t): return {r[1] for r in con.execute(f"PRAGMA table_info({t})")}
-    for t, c, typ in (("bids", "posted_at", "TEXT"), ("bids", "report_status", "TEXT"), ("futures", "posted_at", "TEXT")):
+    for t, c, typ in (("bids", "posted_at", "TEXT"), ("bids", "report_status", "TEXT"), ("futures", "posted_at", "TEXT"), ("ingest_runs", "ok", "INTEGER")):
         if c not in cols(t):
             con.execute(f"ALTER TABLE {t} ADD COLUMN {c} {typ}")
     con.execute("DROP VIEW IF EXISTS bids_flat")
