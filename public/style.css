@@ -37,3 +37,7 @@ tr.row{cursor:pointer}tr.row:hover{background:#f1f6ea}
 .chartwrap{position:relative;height:50vh;min-height:280px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px}
 footer{padding:12px 14px 28px;color:var(--mut);font-size:12px}
 .leaflet-popup-content{font-size:13px}
+
+.banner.confirm{background:#fff4d6;color:#4a3b00;border-bottom:1px solid #e6c766;font-size:.9rem}
+.confirm{color:#6b4e00}
+.small{font-size:.8rem}

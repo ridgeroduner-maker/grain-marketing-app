@@ -1,6 +1,6 @@
 /* Service worker: offline app shell + network-first data. No server push (see README). */
 importScripts('alerts-core.js');
-const VERSION = 'grain-v1';
+const VERSION = 'grain-v2';
 const SHELL = ['./', 'index.html', 'app.js', 'alerts-core.js', 'style.css', 'manifest.webmanifest',
   'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/chart.umd.js',
   'vendor/images/marker-icon.png', 'vendor/images/marker-icon-2x.png', 'vendor/images/marker-shadow.png',

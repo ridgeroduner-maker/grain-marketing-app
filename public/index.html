@@ -19,6 +19,7 @@
 </header>
 <div id="sampleBanner" class="banner sample" hidden>SAMPLE DATA — synthetic prices for demo only. <a href="?">Switch to real data</a></div>
 <div id="noteBanner" class="banner info" hidden></div>
+<div class="banner confirm" role="note"><b>Call your elevator to confirm.</b> These are USDA end-of-day <i>regional</i> bid reports — not offers from any elevator, and not real-time. Each bid shows when USDA posted it.</div>
 
 <section class="controls">
   <label>Commodity <select id="selCommodity"></select></label>
@@ -39,7 +40,7 @@
       <div id="map" aria-label="Map of grain bid locations"></div>
       <div class="side">
         <h2>Bids <span id="mapCount" class="muted"></span></h2>
-        <div class="tablewrap"><table id="bidTable"><thead><tr><th>Location</th><th>Bid</th><th>Basis</th><th>Mi</th></tr></thead><tbody></tbody></table></div>
+        <div class="tablewrap"><table id="bidTable"><thead><tr><th>Location</th><th>Bid</th><th>Basis</th><th>Mi</th><th>Posted</th></tr></thead><tbody></tbody></table></div>
         <div id="futuresBox"></div>
       </div>
     </div>
@@ -84,7 +85,8 @@
 </main>
 
 <footer>
-  <p>Data: USDA Agricultural Marketing Service (AMS) Livestock, Poultry &amp; Grain Market News — end-of-day, regional bids; futures are exchange settlements as published in those reports. Not real-time; not trading advice. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</p>
+  <p><b>Source: USDA Agricultural Marketing Service (AMS) Livestock, Poultry &amp; Grain Market News</b> — reports SD 3186, ND 3878, NE 3225, S. MN 3049, IA 2850, sunflowers 2887, published at <a href="https://mymarketnews.ams.usda.gov/">mymarketnews.ams.usda.gov</a>. Bids are end-of-day, by region (not by elevator); the “Posted” time is when USDA published the report (Central Time). End-of-day futures settlements are as printed in those USDA reports (CBOT / KCBT / MGE), not live quotes. This app is not affiliated with or endorsed by USDA. Call your elevator to confirm any price. Not trading advice.</p>
+  <p>Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</p>
 </footer>
 <script src="vendor/leaflet.js"></script>
 <script src="vendor/chart.umd.js"></script>

@@ -1,5 +1,5 @@
 'use strict';
-const CENTER = { lat: 44.0, lon: -98.9, name: 'Gann Valley, SD' };
+const CENTER = { lat: 44.0335, lon: -98.9884, name: 'Gann Valley, SD' };
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 let base = params.get('sample') ? 'data-sample/' : 'data/';
@@ -16,6 +16,14 @@ const money = (r, v) => r.unit === '$/Cwt' ? '$' + v.toFixed(2) : '$' + v.toFixe
 const unitLbl = (r) => r.unit === '$/Cwt' ? '/cwt' : '/bu';
 const range = (r) => r.bid_low === r.bid_high ? money(r, r.bid_high) : money(r, r.bid_low) + '–' + money(r, r.bid_high);
 const basisTxt = (r) => r.basis_low == null ? '—' : (r.basis_low === r.basis_high ? r.basis_low : r.basis_low + ' to ' + r.basis_high) + '¢ ' + (r.basis_futures_month || '');
+// Time USDA posted a report, shown in Central Time (the zone USDA's Market News offices and the report schedule use here).
+function fmtPosted(iso, dateOnly) {
+  if (!iso) return dateOnly ? 'time not available' : 'posted time not available';
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago' }) + ' CT';
+}
+const postedLbl = (r) => r.posted_at ? 'posted ' + fmtPosted(r.posted_at) : (state.meta.sample ? 'SAMPLE' : 'posted time n/a');
+const CONFIRM_NOTE = 'Call your elevator to confirm — these are USDA regional end-of-day reports, not offers from any elevator.';
 const myPos = () => state.me || CENTER;
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const commodities = () => Object.keys(state.meta.commodities).filter(c => state.latest.some(r => r.commodity === c));
@@ -36,7 +44,8 @@ async function loadAll() {
   [state.latest, state.history, state.futures] = await Promise.all([loadJSON('latest.json'), loadJSON('history.json'), loadJSON('futures.json')]);
   $('sampleBanner').hidden = !state.meta.sample;
   const stale = Math.max(0, ...state.latest.map(r => r.stale_days));
-  $('asof').textContent = 'Reports through ' + state.meta.latest_report_date + (state.meta.sample ? ' (SAMPLE)' : '');
+  const times = Object.values(state.meta.report_times || {}).map(t => t.posted_at).filter(Boolean).sort();
+  $('asof').textContent = 'USDA AMS reports for ' + state.meta.latest_report_date + (times.length ? ' · last posted ' + fmtPosted(times[times.length - 1]) : '') + (state.meta.sample ? ' (SAMPLE)' : '');
 }
 
 // ---------- filters ----------
@@ -75,7 +84,8 @@ function popupHtml(r) {
   const chg = r.prev_bid_high != null ? (r.bid_high - r.prev_bid_high) : null;
   return `<b>${esc(r.location)}</b><br>${esc(r.grade)}${r.protein ? ' · ' + esc(r.protein) : ''}<br>` +
     `Bid <b>${range(r)}</b>${unitLbl(r)}` + (chg != null && Math.abs(chg) > 1e-9 ? ` <span class="${chg > 0 ? 'up' : 'dn'}">${chg > 0 ? '▲' : '▼'}${Math.abs(chg).toFixed(2)}</span>` : '') +
-    `<br>Basis ${esc(basisTxt(r))}<br>Delivery: ${esc(r.delivery)}<br>Report ${r.report_date} · ${esc(r.source_report)}` +
+    `<br>Basis ${esc(basisTxt(r))}<br>Delivery: ${esc(r.delivery)}<br>USDA AMS report ${esc(r.source_report)} for ${r.report_date}, ${esc(postedLbl(r))}` +
+    `<br><i>${esc(CONFIRM_NOTE)}</i>` +
     (r.geo_method === 'approx_region_centroid' ? '<br><i>Region bid — pin is an approximate region center.</i>' : '') +
     (state.meta.sample ? '<br><b>SAMPLE</b>' : '');
 }
@@ -93,7 +103,7 @@ function renderTable() {
   const rows = filtered().sort((a, b) => b.bid_high - a.bid_high), pos = myPos();
   $('mapCount').textContent = '(' + rows.length + ' locations)';
   $('bidTable').querySelector('tbody').innerHTML = rows.map((r, i) =>
-    `<tr class="row" data-i="${i}"><td>${esc(r.location)}${r.geo_method === 'approx_region_centroid' ? ' <span class="muted" title="Approximate region center">~</span>' : ''}</td><td class="n">${range(r)}</td><td>${esc(basisTxt(r))}</td><td class="n">${Math.round(haversine(pos.lat, pos.lon, r.lat, r.lon))}</td></tr>`).join('') || '<tr><td colspan="4">No bids for this selection.</td></tr>';
+    `<tr class="row" data-i="${i}"><td>${esc(r.location)}${r.geo_method === 'approx_region_centroid' ? ' <span class="muted" title="Approximate region center">~</span>' : ''}</td><td class="n">${range(r)}</td><td>${esc(basisTxt(r))}</td><td class="n">${Math.round(haversine(pos.lat, pos.lon, r.lat, r.lon))}</td><td class="small">${esc(r.posted_at ? fmtPosted(r.posted_at).replace(/^\w+, /, '') : postedLbl(r))}</td></tr>`).join('') || '<tr><td colspan="5">No bids for this selection.</td></tr>';
   $('bidTable').querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { const r = rows[tr.dataset.i]; state.map.setView([r.lat, r.lon], 8); r._m && r._m.openPopup(); });
 }
 function renderFutures() {
@@ -106,7 +116,7 @@ function renderFutures() {
   const rows = fut.filter(f => f.exchange === want[0] && f.commodity === want[1]).sort((a, b) => ord(a.contract) - ord(b.contract)).slice(0, 4);
   $('futuresBox').innerHTML = `<h2>End-of-day futures <span class="muted small">${esc(want[0])} ${esc(want[1])} · settle ${rows[0] ? rows[0].date : ''}</span></h2>` +
     `<table><tbody>${rows.map(f => `<tr><td>${esc(f.contract)}</td><td class="n">$${(f.settle_cents / 100).toFixed(4)}/bu</td></tr>`).join('')}</tbody></table>` +
-    `<p class="muted small">Settlements as published in USDA AMS reports (${esc(rows[0] ? rows[0].source_report : '')}). End-of-day only.</p>`;
+    `<p class="muted small">Closing settlements for ${esc(rows[0] ? rows[0].date : '')}, as printed in the <b>USDA AMS Livestock, Poultry &amp; Grain Market News</b> report ${esc(rows[0] ? rows[0].source_report : '')}` + (rows[0] && rows[0].posted_at ? `, posted ${esc(fmtPosted(rows[0].posted_at))}` : '') + `. End-of-day only — not live quotes. Exchange data originates with ${esc(want[0])}.</p>`;
 }
 
 // ---------- best bid near me ----------
@@ -122,8 +132,9 @@ function renderBest() {
     cards.push(`<div class="card"><h3>${esc(state.meta.commodities[c])}</h3>
       <select data-best="${c}">${variantsFor(c).map(v => `<option ${v === variant ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>` +
       (top ? `<div class="big">${money(top, top.bid_high)}<small>${unitLbl(top)}</small></div><div>${esc(top.location)} · ${Math.round(top.dist)} mi</div>
-        <div class="muted small">range ${range(top)} · basis ${esc(basisTxt(top))} · ${top.report_date} · ${esc(top.source_report)}</div>
-        <ol>${rows.slice(1, 4).map(r => `<li>${esc(r.location)} ${money(r, r.bid_high)} · ${Math.round(r.dist)} mi</li>`).join('')}</ol>`
+        <div class="muted small">range ${range(top)} · basis ${esc(basisTxt(top))} · USDA AMS ${esc(top.source_report)} for ${top.report_date}, ${esc(postedLbl(top))}</div>
+        <div class="small confirm">☎ ${esc(CONFIRM_NOTE)}</div>
+        <ol>${rows.slice(1, 4).map(r => `<li>${esc(r.location)} ${money(r, r.bid_high)} · ${Math.round(r.dist)} mi <span class="muted small">(${esc(postedLbl(r))})</span></li>`).join('')}</ol>`
         : `<p class="muted">No current bids within ${rad > 9000 ? 'range' : rad + ' mi'}.</p>`) + '</div>');
   }
   $('bestCards').innerHTML = cards.join('');
