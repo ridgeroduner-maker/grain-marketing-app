@@ -1,7 +1,7 @@
 {
   "name": "Grain Bids near Gann Valley",
   "short_name": "Grain Bids",
-  "description": "End-of-day USDA AMS cash grain bids within 300 miles of Gann Valley, SD.",
+  "description": "USDA AMS regional cash grain bids within about 300 miles of Gann Valley, SD (posted about 2 to 4 pm Central each business day).",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

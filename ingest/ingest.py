@@ -8,11 +8,11 @@ Usage:
   python3 -m ingest.ingest --export        # also regenerate public/data/*.json
 Never writes anywhere but the local SQLite file and public/data/. Publishes nothing."""
 import argparse, datetime, json, sys, traceback
-from . import config, geo, db, parse_pdf, mars_api
+from . import config, geo, db, parse_pdf, mars_api, export_json
 
 def upsert(con, bids, futures, source_label, slug_state, report_date_for_unlocated=None, posted_at=None, status=None):
     stats = {"kept": 0, "outside_radius": 0, "unlocated": 0, "futures": 0}
-    now = datetime.datetime.now().isoformat(timespec="seconds")
+    now = export_json.now_central().isoformat()
     for b in bids:
         state = b["state"] or b["location"].rsplit(",", 1)[-1].strip()
         if "," in b["location"]:
@@ -27,6 +27,12 @@ def upsert(con, bids, futures, source_label, slug_state, report_date_for_unlocat
         dist = geo.haversine_miles(config.CENTER_LAT, config.CENTER_LON, lat, lon)
         if dist > config.RADIUS_MILES:
             stats["outside_radius"] += 1
+            if dist <= config.MARGIN_MILES:
+                con.execute("""INSERT OR REPLACE INTO outside_bids(report_date,source_report,state,location,section,commodity,grade,protein,
+                               delivery,freight,bid_low,bid_high,unit,distance_mi,report_status,posted_at,geo_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                            (b["report_date"], b["source_report"], state, b["location"], b["section"], b["commodity"], b["grade"], b["protein"],
+                             b["delivery"], b["freight"], b["bid_low"], b["bid_high"], b["unit"], round(dist, 1), status, posted_at, method))
+                stats["near_margin"] = stats.get("near_margin", 0) + 1
             continue
         con.execute("""INSERT INTO locations(state,name,section,lat,lon,geo_method,distance_mi) VALUES (?,?,?,?,?,?,?)
                        ON CONFLICT(state,name,section) DO UPDATE SET lat=excluded.lat, lon=excluded.lon,
@@ -50,15 +56,16 @@ def upsert(con, bids, futures, source_label, slug_state, report_date_for_unlocat
 def store_skipped(con, skipped):
     """Persist (and print) in-scope rows that could not be placed, instead of dropping them silently."""
     for reason, b in skipped:
-        con.execute("INSERT OR REPLACE INTO skipped_rows VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        con.execute("""INSERT OR REPLACE INTO skipped_rows(report_date,source_report,state,commodity,heading,section,bid_low,bid_high,unit,delivery,reason,grade,protein,freight)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (b["report_date"], b["source_report"], b.get("state"), b["commodity"], b.get("heading"), b["section"],
-                     b["bid_low"], b["bid_high"], b["unit"], b["delivery"], reason))
+                     b["bid_low"], b["bid_high"], b["unit"], b["delivery"], reason, b.get("grade"), b.get("protein"), b.get("freight")))
         print(f"  SKIPPED ({reason}): {b['source_report']} {b['commodity']} {b['section']} {b['bid_low']}-{b['bid_high']} {b['unit']} [{b.get('heading')}]")
     return len(skipped)
 
-def run(source, date_iso, backfill_days, export):
+def run(source, date_iso, backfill_days, export, accept_row_drop=False):
     con = db.connect()
-    started = datetime.datetime.now().isoformat(timespec="seconds")
+    started = export_json.now_central().isoformat()
     use_mars = source == "mars" or (source == "auto" and bool(__import__("os").environ.get(config.API_KEY_ENV)))
     summary, failures = [], 0
     if use_mars:
@@ -102,15 +109,20 @@ def run(source, date_iso, backfill_days, export):
             traceback.print_exc()
             summary.append(f"AMS_{slug} FAILED: {e}")
     con.execute("INSERT INTO ingest_runs(started_at,finished_at,source,summary,ok) VALUES (?,?,?,?,?)",
-                (started, datetime.datetime.now().isoformat(timespec="seconds"), "mars" if use_mars else "pdf",
+                (started, export_json.now_central().isoformat(), "mars" if use_mars else "pdf",
                  "\n".join(summary), 0 if failures else 1))
     con.commit()
     if export and failures:
         print(f"NOT EXPORTING: {failures} report(s) failed to parse; public/data/ left as it was "
               "(the app will show its age). Fix the parser/report and re-run.", file=sys.stderr)
     elif export:
-        from . import export_json
-        export_json.export(con, config.ROOT / "public" / "data", sample=False)
+        try:
+            export_json.export(con, config.ROOT / "public" / "data", sample=False, accept_row_drop=accept_row_drop)
+        except export_json.ExportGuardError as e:
+            print(f"NOT EXPORTING: {e}", file=sys.stderr)
+            con.execute("UPDATE ingest_runs SET ok=0 WHERE id=(SELECT MAX(id) FROM ingest_runs)")
+            con.commit()
+            failures += 1
     return failures
 
 def main():
@@ -119,9 +131,10 @@ def main():
     ap.add_argument("--date", help="YYYY-MM-DD (mars only)")
     ap.add_argument("--backfill-days", type=int, default=0, help="mars only")
     ap.add_argument("--export", action="store_true")
+    ap.add_argument("--accept-row-drop", action="store_true", help="export even if the row count fell sharply vs the last good export")
     a = ap.parse_args()
     try:
-        rc = run(a.source, a.date, a.backfill_days, a.export)
+        rc = run(a.source, a.date, a.backfill_days, a.export, a.accept_row_drop)
     except mars_api.NoApiKey as e:
         print(f"ERROR: {e}. Use --source pdf or set the key (see README).", file=sys.stderr); rc = 2
     sys.exit(1 if rc else 0)

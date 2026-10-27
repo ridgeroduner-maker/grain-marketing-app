@@ -3,3 +3,4 @@ data/*.db
 data/ingest.log
 __pycache__/
 public/data-sample/
+dist/

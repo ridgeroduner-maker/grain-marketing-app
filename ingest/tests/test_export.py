@@ -99,7 +99,9 @@ class ExportTests(unittest.TestCase):
         cfg = (PUBLIC / "config.js").read_text()
         self.assertRegex(cfg, r"FUTURES_DISPLAY:\s*'full'")
         self.assertRegex(cfg, r"ALLOW_SAMPLE:\s*false")
-        self.assertIn("TILE_URL", cfg); self.assertIn("DEVELOPMENT", cfg)
+        self.assertRegex(cfg, r"GOOGLE_MAPS_API_KEY:\s*''")          # never a committed key
+        self.assertIn("TILE_URL", cfg); self.assertRegex(cfg, r"DEV_OSM_TILES_ON_LOCALHOST:\s*true")
+        self.assertNotRegex(cfg, r"AIza[0-9A-Za-z_-]{20,}")
 
     def test_iowa_unplaced_row_is_stored_and_exported(self):
         p = parsed(2850)
@@ -136,6 +138,11 @@ class RunTests(unittest.TestCase):
         self.assertEqual(rc, 1); self.assertEqual(exported, []); self.assertEqual(oks, [0])
 
 class StaticTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
+        self.con = fresh_db(self.tmp.name)
+        os.environ.pop("GRAIN_FUTURES_DISPLAY", None)
+
     def test_license_texts_shipped(self):
         self.assertIn("BSD 2-Clause", (PUBLIC / "vendor" / "LICENSE-leaflet.txt").read_text())
         self.assertIn("MIT License", (PUBLIC / "vendor" / "LICENSE-chartjs.txt").read_text())
@@ -144,6 +151,74 @@ class StaticTests(unittest.TestCase):
         sw = (PUBLIC / "sw.js").read_text()
         self.assertIn("r.ok && r.status === 200", sw)
         self.assertNotRegex(sw, r"fetch\(req\)\.then\(r => \{ const cp")  # old unconditional put
+
+    def test_outside_margin_bids_listed_not_pinned(self):
+        load(self.con, slugs=(3878,))
+        out = Path(self.tmp.name) / "out"
+        export_json.export(self.con, out, today=datetime.date(2026, 10, 27))
+        outside = json.loads((out / "outside.json").read_text())
+        latest = json.loads((out / "latest.json").read_text())
+        names = {o["location"] for o in outside}
+        self.assertTrue(any("Northeast" in n for n in names) and any("North Central" in n for n in names), names)
+        self.assertTrue(all(300 < o["distance_mi"] <= config.MARGIN_MILES and o["approximate"] for o in outside))
+        self.assertTrue(all(o["variant"] and o["freight_label"] for o in outside))
+        self.assertFalse({o["location"] for o in outside} & {r["location"] for r in latest})   # never pinned/ranked
+        self.assertFalse([r for r in latest if r["distance_mi"] > 300])
+
+    def test_row_count_guard_blocks_export_and_keeps_last_good(self):
+        load(self.con, slugs=(3186, 3878, 3225))
+        out = Path(self.tmp.name) / "out"
+        export_json.export(self.con, out, today=datetime.date(2026, 10, 27))
+        good = (out / "latest.json").read_text()
+        # next day: layout change drops most rows (only ~25% parse)
+        keep = iter(range(10 ** 6))
+        load(self.con, slugs=(3186, 3878, 3225), date="2026-10-27", drop=lambda b: next(keep) % 4 != 0)
+        with self.assertRaises(export_json.ExportGuardError):
+            export_json.export(self.con, out, today=datetime.date(2026, 10, 27))
+        self.assertEqual(good, (out / "latest.json").read_text())
+        export_json.export(self.con, out, today=datetime.date(2026, 10, 27), accept_row_drop=True)   # explicit override works
+        self.assertNotEqual(good, (out / "latest.json").read_text())
+
+    def test_row_guard_fails_the_ingest_run(self):
+        out = Path(self.tmp.name) / "data"; out.mkdir()
+        (out / "latest.json").write_text(json.dumps([{}] * 1000))
+        with mock.patch.object(export_json.export.__globals__["config"], "ROOT", Path(self.tmp.name)), \
+             mock.patch.object(ingest.db, "connect", return_value=self.con), \
+             mock.patch.object(ingest.parse_pdf, "fetch_pdf", side_effect=lambda slug: (FIX / f"ams_{slug}_20261026.pdf").read_bytes()), \
+             mock.patch.object(ingest.parse_pdf, "fetch_posted_at", return_value=None):
+            (Path(self.tmp.name) / "public").mkdir(); (Path(self.tmp.name) / "public" / "data").mkdir()
+            (Path(self.tmp.name) / "public" / "data" / "latest.json").write_text(json.dumps([{}] * 1000))
+            with mock.patch.dict(os.environ, {}, clear=False):
+                os.environ.pop(config.API_KEY_ENV, None)
+                rc = ingest.run("pdf", None, 0, True)
+        self.assertEqual(rc, 1)
+        self.assertEqual(self.con.execute("SELECT ok FROM ingest_runs ORDER BY id DESC LIMIT 1").fetchone()[0], 0)
+
+    def test_times_carry_central_zone(self):
+        load(self.con, slugs=(3186,))
+        self.con.execute("INSERT INTO ingest_runs(started_at,finished_at,source,summary,ok) VALUES ('2026-10-27T13:11:00','2026-10-27T13:11:17','pdf','',1)")
+        _, meta, _ = do_export(self.con, self.tmp.name, "2026-10-27")
+        self.assertTrue(meta["last_ingest_ok_at"].endswith("-05:00"), meta["last_ingest_ok_at"])
+        self.assertTrue(meta["generated_at"][-6:] in ("-05:00", "-06:00"))
+        self.assertEqual(meta["time_zone"], "America/Chicago")
+
+    def test_skipped_row_carries_variant_for_best_card(self):
+        load(self.con, slugs=(2850,))
+        ingest.store_skipped(self.con, parsed(2850)["skipped"]); self.con.commit()
+        _, meta, _ = do_export(self.con, self.tmp.name, "2026-10-27")
+        self.assertEqual(len(meta["skipped_rows"]), 1)
+        self.assertIn("US #1 Soybeans", meta["skipped_rows"][0]["variant"])
+
+    def test_wording_manifest_and_sample_not_in_deploy(self):
+        man = (PUBLIC / "manifest.webmanifest").read_text()
+        self.assertNotRegex(man, r"(?i)end-of-day")
+        self.assertIn("2 to 4 pm Central", man)
+        root = PUBLIC.parent
+        import subprocess
+        tracked = subprocess.run(["git", "ls-files", "public/data-sample"], cwd=root, capture_output=True, text=True).stdout
+        self.assertEqual(tracked.strip(), "")
+        self.assertIn("public/data-sample/", (root / ".gitignore").read_text())
+        self.assertIn("data-sample", (root / "build_dist.sh").read_text())
 
     def test_wording(self):
         for f in ("index.html", "app.js"):

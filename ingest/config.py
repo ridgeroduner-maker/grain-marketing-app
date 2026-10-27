@@ -9,6 +9,11 @@ DB_PATH = Path(os.environ.get("GRAIN_DB", DATA_DIR / "grain.db"))
 # Gann Valley, SD (approx) and service radius.
 CENTER_LAT, CENTER_LON = 44.0335, -98.9884   # Gann Valley, SD (per Data Scout spec S51)
 RADIUS_MILES = 300.0
+# Region bids are drawn at approximate centres, so bids whose centre is only just outside the ring are kept and listed
+# (not pinned, not ranked) in a labelled "just outside your radius" note.
+MARGIN_MILES = 350.0
+# Refuse to export when the new row count falls below this fraction of the last good export (layout-change guard).
+MIN_ROW_RATIO = 0.7
 
 MARS_BASE = "https://marsapi.ams.usda.gov/services/v1.2"
 PDF_URL = "https://www.ams.usda.gov/mnreports/ams_{slug}.pdf"   # public, no key

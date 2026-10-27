@@ -50,6 +50,12 @@ CREATE TABLE IF NOT EXISTS skipped_rows (    -- in-scope bids the parser could n
   bid_low REAL, bid_high REAL, unit TEXT, delivery TEXT, reason TEXT,
   PRIMARY KEY(report_date, source_report, commodity, heading, section, delivery, bid_low, bid_high)
 );
+CREATE TABLE IF NOT EXISTS outside_bids (    -- located bids beyond the radius but within MARGIN_MILES: listed in the UI, never pinned or ranked
+  report_date TEXT, source_report TEXT, state TEXT, location TEXT, section TEXT, commodity TEXT,
+  grade TEXT DEFAULT '', protein TEXT DEFAULT '', delivery TEXT DEFAULT 'Current', freight TEXT,
+  bid_low REAL, bid_high REAL, unit TEXT, distance_mi REAL, report_status TEXT, posted_at TEXT, geo_method TEXT,
+  PRIMARY KEY(report_date, source_report, commodity, location, section, grade, protein, delivery)
+);
 """
 
 VIEW_SQL = """
@@ -72,7 +78,8 @@ def connect(path=None):
 def _migrate(con):
     """Add columns introduced after the first build to pre-existing local databases; (re)create the view."""
     def cols(t): return {r[1] for r in con.execute(f"PRAGMA table_info({t})")}
-    for t, c, typ in (("bids", "posted_at", "TEXT"), ("bids", "report_status", "TEXT"), ("futures", "posted_at", "TEXT"), ("ingest_runs", "ok", "INTEGER")):
+    for t, c, typ in (("bids", "posted_at", "TEXT"), ("bids", "report_status", "TEXT"), ("futures", "posted_at", "TEXT"), ("ingest_runs", "ok", "INTEGER"),
+                    ("skipped_rows", "grade", "TEXT"), ("skipped_rows", "protein", "TEXT"), ("skipped_rows", "freight", "TEXT"), ("outside_bids", "geo_method", "TEXT")):
         if c not in cols(t):
             con.execute(f"ALTER TABLE {t} ADD COLUMN {c} {typ}")
     con.execute("DROP VIEW IF EXISTS bids_flat")

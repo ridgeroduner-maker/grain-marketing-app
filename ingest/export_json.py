@@ -1,5 +1,5 @@
 """Export SQLite -> static JSON consumed by the PWA (public/data or public/data-sample)."""
-import datetime, json, sqlite3
+import datetime, json, sqlite3, zoneinfo
 from . import config, db
 
 LABELS = {"corn": "Corn", "soybeans": "Soybeans", "spring_wheat": "Spring wheat",
@@ -38,6 +38,27 @@ def label_of(state, name, section):
     extra = SECTION_SHORT.get(section, section)
     return f"{base} ({extra})" if extra else base
 
+CENTRAL = zoneinfo.ZoneInfo("America/Chicago")
+
+def _label_for(source_report):
+    for rep in config.REPORTS:
+        if f"AMS_{rep['slug']}" == source_report:
+            return f"{rep['state'] or 'Sunflower'} ({rep['slug']})"
+    return source_report
+
+def now_central():
+    return datetime.datetime.now(CENTRAL).replace(microsecond=0)
+
+def central_iso(ts):
+    """ISO string with an explicit Central offset. Naive stored times were written on a Central-time box (see README)."""
+    if not ts:
+        return None
+    d = datetime.datetime.fromisoformat(ts)
+    return (d.replace(tzinfo=CENTRAL) if d.tzinfo is None else d.astimezone(CENTRAL)).isoformat(timespec="seconds")
+
+class ExportGuardError(RuntimeError):
+    """Raised instead of exporting when the new data looks broken (row count fell sharply)."""
+
 def business_days_between(d0, d1):
     """Weekdays from d0 (exclusive) to d1 (inclusive); 0 if d1 <= d0. Holidays are not modelled."""
     n, d = 0, d0
@@ -47,7 +68,25 @@ def business_days_between(d0, d1):
             n += 1
     return n
 
-def export(con, outdir, sample=False, today=None):
+def _outside(cur, today):
+    """Bids whose (approximate) location is beyond the radius but within the margin: newest edition per report only."""
+    out = []
+    for r in cur.execute("""SELECT o.* FROM outside_bids o WHERE o.report_date=(SELECT MAX(x.report_date) FROM outside_bids x WHERE x.source_report=o.source_report)
+                            AND o.report_date=(SELECT MAX(b.report_date) FROM bids b WHERE b.source_report=o.source_report)
+                            ORDER BY o.distance_mi"""):
+        age = (today - datetime.date.fromisoformat(r["report_date"])).days
+        if age > config.STALE_EXPIRE_DAYS:
+            continue
+        out.append({"commodity": r["commodity"], "variant": variant_of(r["commodity"], r["grade"], r["protein"], r["freight"]),
+                    "location": label_of(r["state"], r["location"], r["section"]), "grade": r["grade"], "protein": r["protein"],
+                    "delivery": r["delivery"], "freight_label": freight_label(r["freight"]),
+                    "bid_low": r["bid_low"], "bid_high": r["bid_high"], "unit": r["unit"], "distance_mi": r["distance_mi"],
+                    "report_date": r["report_date"], "source_report": r["source_report"], "report_status": r["report_status"],
+                    "posted_at": central_iso(r["posted_at"]) if r["posted_at"] else None,
+                    "precision": "town" if r["geo_method"] == "gazetteer_town" else "region", "approximate": r["geo_method"] != "gazetteer_town"})
+    return out
+
+def export(con, outdir, sample=False, today=None, accept_row_drop=False):
     """today: datetime.date used for staleness (defaults to the real date; sample data uses its own newest date)."""
     outdir.mkdir(parents=True, exist_ok=True)
     cur = con.cursor()
@@ -100,6 +139,16 @@ def export(con, outdir, sample=False, today=None):
             "prev_report_date": prev["report_date"] if prev else None,
             "age_days": age, "stale_days": age,
         })
+    # Row-count regression guard: a layout change that silently drops rows must not overwrite the last good export.
+    prev_file = outdir / "latest.json"
+    if not sample and not accept_row_drop and prev_file.exists():
+        try:
+            prev_n = len(json.loads(prev_file.read_text()))
+        except ValueError:
+            prev_n = 0
+        if prev_n and len(latest_rows) < config.MIN_ROW_RATIO * prev_n:
+            raise ExportGuardError(f"new export has {len(latest_rows)} rows vs {prev_n} in the last good export "
+                                   f"(< {int(config.MIN_ROW_RATIO * 100)}%); NOT exporting. If this drop is real, re-run with --accept-row-drop.")
     live_keys = {r["key"] for r in latest_rows}
     hist = {}
     for key, lst in series.items():
@@ -111,19 +160,25 @@ def export(con, outdir, sample=False, today=None):
            ORDER BY exchange, commodity""").fetchall()
     skipped = [dict(r) for r in cur.execute(
         """SELECT report_date, source_report, state, commodity, heading, section, bid_low, bid_high, unit, delivery, reason
+           , grade, protein, freight
            FROM skipped_rows WHERE report_date=(SELECT MAX(s2.report_date) FROM skipped_rows s2 WHERE s2.source_report=skipped_rows.source_report)
            ORDER BY source_report""")] if not sample else []
+    for x in skipped:
+        x["variant"] = variant_of(x["commodity"], x.pop("grade"), x.pop("protein"), x.pop("freight"))
+    outside = [] if sample else _outside(cur, today)
     ok_run = None if sample else cur.execute("SELECT finished_at FROM ingest_runs WHERE ok=1 ORDER BY id DESC LIMIT 1").fetchone()
     meta = {
-        "sample": bool(sample), "generated_at": datetime.datetime.now().isoformat(timespec="seconds"),
-        "last_ingest_ok_at": ok_run[0] if ok_run else None,
+        "sample": bool(sample), "generated_at": now_central().isoformat(),
+        "last_ingest_ok_at": central_iso(ok_run[0]) if ok_run else None,
+        "time_zone": "America/Chicago",
         "export_today": today.isoformat(),
         "latest_report_date": maxdate, "center": {"lat": config.CENTER_LAT, "lon": config.CENTER_LON},
         "radius_miles": config.RADIUS_MILES, "commodities": LABELS,
         "futures_display": fut_mode,
         "stale_expire_days": config.STALE_EXPIRE_DAYS,
         "reports": sorted(newest),
-        "report_times": {r["source_report"]: {"report_date": r["report_date"], "posted_at": r["posted_at"], "status": r["report_status"]}
+        "report_times": {r["source_report"]: {"report_date": r["report_date"], "posted_at": r["posted_at"], "status": r["report_status"],
+                                              "label": _label_for(r["source_report"])}
                          for r in rows if r["report_date"] == newest[r["source_report"]]},
         "dropped_rows": dropped,
         "skipped_rows": skipped,
@@ -133,6 +188,7 @@ def export(con, outdir, sample=False, today=None):
         "notes": "Regional cash bids from USDA AMS Market News, posted about 2 to 4 pm Central each business day. Not real-time.",
     }
     (outdir / "meta.json").write_text(json.dumps(meta, indent=1))
+    (outdir / "outside.json").write_text(json.dumps(outside, separators=(",", ":")))
     (outdir / "latest.json").write_text(json.dumps(latest_rows, separators=(",", ":")))
     (outdir / "history.json").write_text(json.dumps({k: v for k, v in hist.items() if k in live_keys}, separators=(",", ":")))
     (outdir / "futures.json").write_text(json.dumps(
