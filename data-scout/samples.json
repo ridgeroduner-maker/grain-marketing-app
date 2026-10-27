@@ -1,0 +1,134 @@
+{
+ "futures_sample": [
+  {
+   "exchange": "CBOT",
+   "commodity": "Corn",
+   "price_cents_bu": 455.0,
+   "contract": "Dec 26"
+  },
+  {
+   "exchange": "CBOT",
+   "commodity": "Soybeans",
+   "price_cents_bu": 1241.25,
+   "contract": "Nov 26"
+  },
+  {
+   "exchange": "CBOT",
+   "commodity": "Wheat",
+   "price_cents_bu": 616.0,
+   "contract": "Dec 26"
+  },
+  {
+   "exchange": "KCBT",
+   "commodity": "Wheat",
+   "price_cents_bu": 659.0,
+   "contract": "Dec 26"
+  },
+  {
+   "exchange": "MGE",
+   "commodity": "Wheat",
+   "price_cents_bu": 634.0,
+   "contract": "Dec 26"
+  }
+ ],
+ "corn": {
+  "slug": "3186",
+  "report_date": "10/26/2026",
+  "commodity": "US #2 Yellow Corn",
+  "market_type": "Country Elevators - Conventional",
+  "region": "North Central",
+  "sale_type": "Bid",
+  "protein": null,
+  "basis_raw": "-90.00Z to -80.00Z",
+  "basis_change_raw": "UNCH",
+  "price_raw": "3.6500-3.7500",
+  "price_change_raw": "DN 0.0100",
+  "avg_price": 3.7029,
+  "year_ago_avg": 3.5589,
+  "freight": "DLVD-T",
+  "delivery": "Current"
+ },
+ "soy": {
+  "slug": "3186",
+  "report_date": "10/26/2026",
+  "commodity": "US #1 Soybeans",
+  "market_type": "Country Elevators - Conventional",
+  "region": "North Central",
+  "sale_type": "Bid",
+  "protein": null,
+  "basis_raw": "-80.00X to -55.00X",
+  "basis_change_raw": "UNCH",
+  "price_raw": "11.6125-11.8625",
+  "price_change_raw": "DN 0.1525",
+  "avg_price": 11.7292,
+  "year_ago_avg": null,
+  "freight": "DLVD-T",
+  "delivery": "Current"
+ },
+ "hrs": {
+  "slug": "3186",
+  "report_date": "10/26/2026",
+  "commodity": "US #1 Hard Red Spring Wheat",
+  "market_type": "Country Elevators - Conventional",
+  "region": "North Central",
+  "sale_type": "Bid",
+  "protein": "14.0%",
+  "basis_raw": "-80.00Z to -70.00Z",
+  "basis_change_raw": "UNCH",
+  "price_raw": "5.5400-5.6400",
+  "price_change_raw": "DN 0.0750",
+  "avg_price": 5.57,
+  "year_ago_avg": 4.8125,
+  "freight": "DLVD-T",
+  "delivery": "Current"
+ },
+ "hrw": {
+  "slug": "3186",
+  "report_date": "10/26/2026",
+  "commodity": "US #1 Hard Red Winter Wheat",
+  "market_type": "Country Elevators - Conventional",
+  "region": "North Central",
+  "sale_type": "Bid",
+  "protein": "Ordinary",
+  "basis_raw": "-90.00Z",
+  "basis_change_raw": "UNCH",
+  "price_raw": "5.6900",
+  "price_change_raw": "DN 0.0550",
+  "avg_price": 5.69,
+  "year_ago_avg": 4.1925,
+  "freight": "DLVD-T",
+  "delivery": "Current"
+ },
+ "sunflower": [
+  {
+   "slug": 2887,
+   "report_date": "10/26/2026",
+   "commodity": "US #1 High Oleics Sunflower Seeds",
+   "market_type": "Terminals/Mills/Processors - Conventional",
+   "location": "Enderlin, ND",
+   "sale_type": "Bid",
+   "basis": null,
+   "price_usd_cwt": 25.9,
+   "price_change": "DN 0.35",
+   "avg_usd_cwt": 25.9,
+   "year_ago_usd_cwt": 21.0,
+   "freight": "DLVD-T",
+   "delivery": "Current"
+  },
+  {
+   "slug": 2887,
+   "report_date": "10/26/2026",
+   "commodity": "US #1 High Oleics Sunflower Seeds",
+   "market_type": "Terminals/Mills/Processors - Conventional",
+   "location": "Enderlin, ND",
+   "sale_type": "Bid",
+   "basis": null,
+   "price_usd_cwt": 26.25,
+   "price_change": "UNCH",
+   "avg_usd_cwt": 26.25,
+   "year_ago_usd_cwt": 21.15,
+   "freight": "DLVD-T",
+   "delivery": "Dec"
+  }
+ ]
+}
