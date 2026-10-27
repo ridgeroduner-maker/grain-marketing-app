@@ -40,7 +40,7 @@ def main():
                        r["basis_low"], r["basis_high"], r["basis_unit"], r["basis_futures_month"], r["delivery"],
                        r["freight"], r["sale_type"], day.isoformat(), r["source_report"], "SAMPLE " + (r["source_title"] or ""), "SAMPLE"))
     for f in real.execute("SELECT * FROM futures WHERE report_date=(SELECT MAX(report_date) FROM futures)"):
-        s.execute("INSERT OR REPLACE INTO futures VALUES (?,?,?,?,?,?,1)",
+        s.execute("INSERT OR REPLACE INTO futures(report_date,exchange,commodity,contract,settle_cents,source_report,is_sample) VALUES (?,?,?,?,?,?,1)",
                   (f["report_date"], f["exchange"], f["commodity"], f["contract"], f["settle_cents"], "SAMPLE"))
     s.commit()
     export_json.export(s, config.ROOT / "public" / "data-sample", sample=True)

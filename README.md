@@ -2,7 +2,7 @@
 
 Public-facing PWA showing **end-of-day** cash grain bids (corn, spring wheat, winter wheat, soybeans, sunflowers)
 within **300 miles of Gann Valley, SD** (44.0, −98.9), from **USDA AMS Market News only**. No profit calculator.
-Nothing here is deployed, published, pushed or scheduled. Everything is free/open-source.
+Nothing here is deployed, published or scheduled; work lives on branch `build/v1` (not merged to main). Everything is free/open-source.
 
 ## Run it
 
@@ -11,7 +11,7 @@ cd /workspace/grain-app          # needs: python3 (stdlib only) + pdftotext (pop
 ./run_ingest.sh                  # fetch today's AMS reports -> data/grain.db -> public/data/*.json   (no API key needed)
 python3 -m ingest.make_sample    # optional: SYNTHETIC 45-day history -> public/data-sample/ (flagged SAMPLE in UI)
 ./serve.sh                       # http://127.0.0.1:8765   (add ?sample=1 for sample data; #history #best #alerts open a tab)
-python3 -m unittest discover -s ingest/tests && node public/alerts-core.test.js   # tests
+python3 -m unittest discover -s ingest/tests && node public/alerts-core.test.js   # tests (8 python + alerts)
 ```
 
 ## 1. USDA AMS data sources (researched 2026-10-27)
@@ -31,7 +31,7 @@ Daily cash bids by location are published as AMS "Point of Sale – Grain" repor
 Two ways to read them:
 
 * **MARS API** — `https://marsapi.ams.usda.gov/services/v1.2/reports/{slug}/Report Detail?q=report_date=MM/DD/YYYY`.
-  **Requires a free API key** (verified: unauthenticated call returns `401 User is not found`). HTTP Basic auth, key as
+  **Requires a free API key** (unauthenticated calls are refused: 401 in my test, 403 in Data Scout's). HTTP Basic auth, key as
   username, empty password. Gives full history (needed for backfill/charts). Rows have `trade_loc`, `commodity`, `grade`,
   `protein`, `price Min/Max`, `basis Min/Max`, `basis Min Futures Month`, `avg_price`, `report_date`…
 * **Public report PDFs, no key** — `https://www.ams.usda.gov/mnreports/ams_{slug}.pdf` (today's report only, no history).
@@ -50,6 +50,15 @@ elevator**. Only the sunflower/canola report lists towns. So "map of bid locatio
 
 > The MARS code path is written from AMS docs + a published sample row and unit-tested on that row, but **has not hit the live API**
 > (no key was available). Expect to adjust field handling on first real run (e.g. the backfill date-range syntax `q=report_begin_date=a:b`).
+
+### Posted-at times, credit and the confirm note (build/v1)
+* Every bid shows **when USDA posted its report** (America/Chicago): ingest reads `publishedDate` from the keyless public MARS metadata endpoint
+  (`/services/v3.1/public/listPublishedReport/<id>?format=json`, metadata only — no prices) and stores it as `bids.posted_at` / `futures.posted_at`;
+  if unavailable the UI says "posted time n/a". Matches Data Scout's observed times (e.g. SD 2:28 pm CT).
+* A persistent “Call your elevator to confirm” banner, the same note on every best-bid card and map popup, and a footer crediting
+  **USDA AMS Livestock, Poultry & Grain Market News** (report IDs listed). The futures panel names the USDA report it was printed in.
+* Radius center is Gann Valley **44.0335 N, 98.9884 W** (Data Scout S51), haversine 300 mi.
+* Open licensing risk (spec §6.8): futures numbers originate with CME/MIAX; shown only as printed in USDA reports with attribution. Ask USDA/CME before a public launch.
 
 ## 2. Ingest job (`ingest/`)
 * `python3 -m ingest.ingest [--source auto|pdf|mars] [--date YYYY-MM-DD] [--backfill-days N] [--export]` — `auto` = MARS if `USDA_AMS_API_KEY` set else PDF.

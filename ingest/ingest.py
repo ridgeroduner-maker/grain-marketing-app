@@ -10,7 +10,7 @@ Never writes anywhere but the local SQLite file and public/data/. Publishes noth
 import argparse, datetime, json, sys, traceback
 from . import config, geo, db, parse_pdf, mars_api
 
-def upsert(con, bids, futures, source_label, slug_state, report_date_for_unlocated=None):
+def upsert(con, bids, futures, source_label, slug_state, report_date_for_unlocated=None, posted_at=None, status=None):
     stats = {"kept": 0, "outside_radius": 0, "unlocated": 0, "futures": 0}
     now = datetime.datetime.now().isoformat(timespec="seconds")
     for b in bids:
@@ -36,14 +36,14 @@ def upsert(con, bids, futures, source_label, slug_state, report_date_for_unlocat
                           (state, b["location"], b["section"])).fetchone()[0]
         con.execute("""INSERT OR REPLACE INTO bids(commodity,location_id,grade,protein,bid_low,bid_high,bid_avg,unit,
                        basis_low,basis_high,basis_unit,basis_futures_month,delivery,freight,sale_type,report_date,
-                       source_report,source_title,fetched_at,is_sample) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)""",
+                       source_report,source_title,fetched_at,posted_at,report_status,is_sample) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)""",
                     (b["commodity"], lid, b["grade"], b["protein"], b["bid_low"], b["bid_high"], b["bid_avg"], b["unit"],
                      b["basis_low"], b["basis_high"], b["basis_unit"], b["basis_futures_month"], b["delivery"],
-                     b["freight"], b["sale_type"], b["report_date"], b["source_report"], b["source_title"], now))
+                     b["freight"], b["sale_type"], b["report_date"], b["source_report"], b["source_title"], now, posted_at, status))
         stats["kept"] += 1
     for f in futures:
-        con.execute("INSERT OR REPLACE INTO futures VALUES (?,?,?,?,?,?,0)",
-                    (f["report_date"], f["exchange"], f["commodity"], f["contract"], f["settle_cents"], f["source_report"]))
+        con.execute("INSERT OR REPLACE INTO futures(report_date,exchange,commodity,contract,settle_cents,source_report,is_sample,posted_at) VALUES (?,?,?,?,?,?,0,?)",
+                    (f["report_date"], f["exchange"], f["commodity"], f["contract"], f["settle_cents"], f["source_report"], posted_at))
         stats["futures"] += 1
     return stats
 
@@ -77,7 +77,10 @@ def run(source, date_iso, backfill_days, export):
                 else:
                     rows = mars_api.fetch_report_detail(slug, date_iso)
                 bids, _ = mars_api.normalize_rows(rows, slug, title, state)
-            st = upsert(con, bids, futs, "mars" if use_mars else "pdf", state)
+            rd0 = parsed["report_date"] if parsed else date_iso
+            posted = parse_pdf.fetch_posted_at(slug, rd0) if rd0 else None
+            st = upsert(con, bids, futs, "mars" if use_mars else "pdf", state,
+                        posted_at=posted, status=(parsed or {}).get("status"))
             rd = parsed["report_date"] if parsed else date_iso
             line = f"AMS_{slug} {title[:38]:38} date={rd} parsed={len(bids)} {st}"
             print(line); summary.append(line)

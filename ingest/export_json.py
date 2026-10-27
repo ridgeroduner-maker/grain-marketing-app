@@ -54,6 +54,7 @@ def export(con, outdir, sample=False):
             "unit": last["unit"], "basis_low": last["basis_low"], "basis_high": last["basis_high"],
             "basis_unit": last["basis_unit"], "basis_futures_month": last["basis_futures_month"],
             "report_date": last["report_date"], "source_report": last["source_report"],
+            "posted_at": last["posted_at"], "report_status": last["report_status"],
             "prev_bid_high": prev["bid_high"] if prev else None, "stale_days": age,
         })
     hist = {}
@@ -67,6 +68,10 @@ def export(con, outdir, sample=False):
         "latest_report_date": maxdate, "center": {"lat": config.CENTER_LAT, "lon": config.CENTER_LON},
         "radius_miles": config.RADIUS_MILES, "commodities": LABELS,
         "reports": sorted({r["source_report"] for r in rows}),
+        "report_times": {r["source_report"]: {"report_date": r["report_date"], "posted_at": r["posted_at"], "status": r["report_status"]}
+                         for r in rows if r["report_date"] == maxdate},
+        "center_name": "Gann Valley, SD",
+        "credit": "Source: USDA AMS Livestock, Poultry & Grain Market News (mymarketnews.ams.usda.gov). Futures settlements are as printed in those USDA reports.",
         "n_locations": len({r["location_id"] for r in rows}),
         "notes": "End-of-day settlements and regional cash bids from USDA AMS Market News. Not real-time.",
     }
@@ -75,7 +80,8 @@ def export(con, outdir, sample=False):
     (outdir / "history.json").write_text(json.dumps(hist, separators=(",", ":")))
     (outdir / "futures.json").write_text(json.dumps(
         [{"date": f["report_date"], "exchange": f["exchange"], "commodity": f["commodity"],
-          "contract": f["contract"], "settle_cents": f["settle_cents"], "source_report": f["source_report"]} for f in fut],
+          "contract": f["contract"], "settle_cents": f["settle_cents"], "source_report": f["source_report"],
+          "posted_at": f["posted_at"]} for f in fut],
         separators=(",", ":")))
     print(f"exported {len(latest_rows)} latest rows, {len(hist)} series, {len(fut)} futures -> {outdir}")
 

@@ -27,13 +27,15 @@ CREATE TABLE IF NOT EXISTS bids (
   source_report TEXT NOT NULL,   -- AMS_3186 ...
   source_title TEXT,
   fetched_at TEXT,
+  posted_at TEXT,                -- when USDA published the report (ISO, America/Chicago); NULL if unknown
+  report_status TEXT,            -- Final | Preliminary
   is_sample INTEGER NOT NULL DEFAULT 0,
   UNIQUE(report_date, source_report, commodity, grade, protein, location_id, delivery)
 );
 CREATE INDEX IF NOT EXISTS idx_bids_lookup ON bids(commodity, location_id, report_date);
 CREATE TABLE IF NOT EXISTS futures (
   report_date TEXT NOT NULL, exchange TEXT NOT NULL, commodity TEXT NOT NULL,
-  contract TEXT NOT NULL, settle_cents REAL, source_report TEXT, is_sample INTEGER NOT NULL DEFAULT 0,
+  contract TEXT NOT NULL, settle_cents REAL, source_report TEXT, is_sample INTEGER NOT NULL DEFAULT 0, posted_at TEXT,
   PRIMARY KEY(report_date, exchange, commodity, contract)
 );
 CREATE TABLE IF NOT EXISTS unlocated (       -- rows we could not place on the map
@@ -43,10 +45,13 @@ CREATE TABLE IF NOT EXISTS unlocated (       -- rows we could not place on the m
 CREATE TABLE IF NOT EXISTS ingest_runs (
   id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, source TEXT, summary TEXT
 );
-CREATE VIEW IF NOT EXISTS bids_flat AS
+"""
+
+VIEW_SQL = """
+CREATE VIEW bids_flat AS
   SELECT b.commodity, l.state||' '||l.name AS location, l.lat, l.lon, l.geo_method, l.distance_mi,
          b.bid_high AS bid, b.bid_low, b.bid_avg, b.unit, b.basis_low, b.basis_high, b.basis_unit,
-         b.basis_futures_month, b.delivery, b.grade, b.protein, b.report_date, b.source_report, b.is_sample
+         b.basis_futures_month, b.delivery, b.grade, b.protein, b.report_date, b.posted_at, b.source_report, b.is_sample
   FROM bids b JOIN locations l ON l.id=b.location_id;
 """
 
@@ -56,4 +61,15 @@ def connect(path=None):
     con = sqlite3.connect(p)
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
+    _migrate(con)
     return con
+
+def _migrate(con):
+    """Add columns introduced after the first build to pre-existing local databases; (re)create the view."""
+    def cols(t): return {r[1] for r in con.execute(f"PRAGMA table_info({t})")}
+    for t, c, typ in (("bids", "posted_at", "TEXT"), ("bids", "report_status", "TEXT"), ("futures", "posted_at", "TEXT")):
+        if c not in cols(t):
+            con.execute(f"ALTER TABLE {t} ADD COLUMN {c} {typ}")
+    con.execute("DROP VIEW IF EXISTS bids_flat")
+    con.executescript(VIEW_SQL)
+    con.commit()

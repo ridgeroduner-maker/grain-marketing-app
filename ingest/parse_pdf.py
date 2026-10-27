@@ -3,7 +3,7 @@
 Verified against the live 2026-10-26 reports 3186, 3878, 3225, 3049, 2850, 2887.
 Requires the `pdftotext` binary (poppler-utils)."""
 import re, subprocess, datetime, urllib.request
-from .config import PDF_URL, COMMODITY_RULES
+from .config import PDF_URL, PUBLISHED_URL, COMMODITY_RULES
 
 MONTH = {"F": "Jan", "G": "Feb", "H": "Mar", "J": "Apr", "K": "May", "M": "Jun",
          "N": "Jul", "Q": "Aug", "U": "Sep", "V": "Oct", "X": "Nov", "Z": "Dec"}
@@ -12,6 +12,34 @@ def fetch_pdf(slug, timeout=60):
     req = urllib.request.Request(PDF_URL.format(slug=slug), headers={"User-Agent": "Mozilla/5.0 grain-app"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read()
+
+_TZ_OFFSETS = {"MDT": -6, "MST": -7, "CDT": -5, "CST": -6, "EDT": -4, "EST": -5, "PDT": -7, "PST": -8}
+
+def parse_published(s):
+    """'2026-10-26 13:28:06 MDT' (MARS publishedDate) -> '2026-10-26T14:28:06-05:00' in America/Chicago, or None."""
+    import zoneinfo
+    m = re.match(r"(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) ([A-Z]{3})$", (s or "").strip())
+    if not m or m.group(2) not in _TZ_OFFSETS:
+        return None
+    dt = datetime.datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(
+        tzinfo=datetime.timezone(datetime.timedelta(hours=_TZ_OFFSETS[m.group(2)])))
+    return dt.astimezone(zoneinfo.ZoneInfo("America/Chicago")).isoformat(timespec="seconds")
+
+def fetch_posted_at(slug, report_date=None, timeout=30):
+    """When USDA published the report, via the keyless public MARS metadata endpoint (no prices, no key; spec S11).
+    Returns ISO string (America/Chicago) or None. If report_date (YYYY-MM-DD) is given, the metadata must be for that date."""
+    import json
+    try:
+        req = urllib.request.Request(PUBLISHED_URL.format(slug=slug), headers={"User-Agent": "Mozilla/5.0 grain-app"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            reps = json.load(r).get("reports") or []
+        for rep in reps:
+            if report_date and rep.get("reportBeginDate") != report_date:
+                continue
+            return parse_published(rep.get("publishedDate"))
+    except Exception:
+        return None
+    return None
 
 def pdf_to_text(pdf_bytes):
     p = subprocess.run(["pdftotext", "-layout", "-", "-"], input=pdf_bytes, capture_output=True, check=True)

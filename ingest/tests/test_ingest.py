@@ -32,6 +32,23 @@ class T(unittest.TestCase):
         self.assertEqual(sf[0]["bid_high"], 25.9); self.assertEqual(sf[0]["unit"], "$/Cwt")
         self.assertFalse(any(b["commodity"] != "sunflowers" for b in r["bids"]))
 
+    def test_center_and_radius(self):
+        from ingest import config
+        self.assertAlmostEqual(config.CENTER_LAT, 44.0335); self.assertAlmostEqual(config.CENTER_LON, -98.9884)
+        self.assertEqual(config.RADIUS_MILES, 300.0)
+        # spec s5 checkpoints (haversine miles): Sioux Falls ~117, Enderlin ND ~192, Ames IA ~304 (outside)
+        self.assertTrue(112 < geo.haversine_miles(config.CENTER_LAT, config.CENTER_LON, 43.5446, -96.7311) < 122)
+        self.assertTrue(300 < geo.haversine_miles(config.CENTER_LAT, config.CENTER_LON, 42.0347, -93.62) < 310)
+
+    def test_report_ids_match_spec(self):
+        from ingest import config
+        self.assertEqual(sorted(r["slug"] for r in config.REPORTS), [2850, 2887, 3049, 3186, 3225, 3878])
+
+    def test_posted_at(self):
+        # MARS publishedDate is MDT; spec: 2026-10-26 13:28:06 MDT == 2:28 pm Chicago
+        self.assertEqual(parse_pdf.parse_published("2026-10-26 13:28:06 MDT"), "2026-10-26T14:28:06-05:00")
+        self.assertIsNone(parse_pdf.parse_published("garbage"))
+
     def test_locate(self):
         lat, lon, m = geo.locate(None, "Enderlin, ND")
         self.assertEqual(m, "gazetteer_town"); self.assertTrue(46 < lat < 47)

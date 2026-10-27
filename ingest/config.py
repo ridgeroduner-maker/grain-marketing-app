@@ -7,11 +7,12 @@ DATA_DIR = ROOT / "data"
 DB_PATH = Path(os.environ.get("GRAIN_DB", DATA_DIR / "grain.db"))
 
 # Gann Valley, SD (approx) and service radius.
-CENTER_LAT, CENTER_LON = 44.0, -98.9
+CENTER_LAT, CENTER_LON = 44.0335, -98.9884   # Gann Valley, SD (per Data Scout spec S51)
 RADIUS_MILES = 300.0
 
 MARS_BASE = "https://marsapi.ams.usda.gov/services/v1.2"
 PDF_URL = "https://www.ams.usda.gov/mnreports/ams_{slug}.pdf"   # public, no key
+PUBLISHED_URL = "https://marsapi.ams.usda.gov/services/v3.1/public/listPublishedReport/{slug}?format=json"  # keyless metadata only (spec S11/S31)
 API_KEY_ENV = "USDA_AMS_API_KEY"
 
 # AMS Market News report slugs we ingest. `state` = default state for rows whose
