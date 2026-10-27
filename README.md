@@ -1,6 +1,6 @@
 # Grain Bids — first working version (LOCAL ONLY)
 
-Public-facing PWA showing **end-of-day** cash grain bids (corn, spring wheat, winter wheat, soybeans, sunflowers)
+Public-facing PWA showing USDA's regional cash grain bids (posted about 2 to 4 pm Central each business day) (corn, spring wheat, winter wheat, soybeans, sunflowers)
 within **300 miles of Gann Valley, SD** (44.0, −98.9), from **USDA AMS Market News only**. No profit calculator.
 Nothing here is deployed, published or scheduled; work lives on branch `build/v1` (not merged to main). Everything is free/open-source.
 
@@ -9,10 +9,45 @@ Nothing here is deployed, published or scheduled; work lives on branch `build/v1
 ```bash
 cd /workspace/grain-app          # needs: python3 (stdlib only) + pdftotext (poppler-utils)
 ./run_ingest.sh                  # fetch today's AMS reports -> data/grain.db -> public/data/*.json   (no API key needed)
-python3 -m ingest.make_sample    # optional: SYNTHETIC 45-day history -> public/data-sample/ (flagged SAMPLE in UI)
-./serve.sh                       # http://127.0.0.1:8765   (add ?sample=1 for sample data; #history #best #alerts open a tab)
-python3 -m unittest discover -s ingest/tests && node public/alerts-core.test.js   # tests (8 python + alerts)
+python3 -m ingest.make_sample    # optional: SYNTHETIC 45-day history -> public/data-sample/ (git-ignored; only usable if ALLOW_SAMPLE is true in public/config.js)
+./serve.sh                       # http://127.0.0.1:8765   (#history #best #alerts open a tab; ?sample=1 only works if ALLOW_SAMPLE is true)
+python3 -m unittest discover -s ingest/tests && node public/alerts-core.test.js   # tests (22 python incl. export/staleness/failure/switch tests, + alerts)
 ```
+
+## Decisions
+(Restored from the project notes that were first committed in `0d65bd9`; the build README replaced them.)
+- Public app, free tools only. Crops: corn, spring wheat, winter wheat, soybeans, sunflowers, within 300 miles of Gann Valley, SD.
+- Features: map, best bid near me, price alerts, history charts. **No profit calculator.**
+- Prices: USDA AMS Market News regional data only at launch. No contact or permission requests to elevators. Sunflowers: thin coverage is OK.
+- Futures: settlements as printed in the USDA reports only. No paid CME data at launch.
+- **Oct 27, 2026: futures prices are shown with USDA AMS credit and the CME display risk flagged by Reviewer is accepted. Recorded on BOBBY's relay of Ridge's decision; Ridge to confirm.**
+  Implemented as a switch: `FUTURES_DISPLAY` in `public/config.js` = `full` (default) or `basis_only` (hides futures dollar settlements everywhere, including an empty `futures.json`, and shows basis only). Tested in `ingest/tests/test_export.py`.
+- Nothing is published, sent, or paid for without Ridge typing APPROVE.
+
+## Settings (`public/config.js`, one place)
+| Setting | Default | Meaning |
+|---|---|---|
+| `FUTURES_DISPLAY` | `full` | `full` or `basis_only` (see Decisions). Also read by the export (`ingest/config.py: futures_display()`); env `GRAIN_FUTURES_DISPLAY` overrides for one run. |
+| `TILE_URL` / `TILE_ATTRIBUTION` / `TILE_MAX_ZOOM` | OSM public tiles | **OSM public tile servers are for development/light use only** ([policy](https://operations.osmfoundation.org/policies/tiles/)). Before a public launch point `TILE_URL` at your own server or a provider you have an account for, and set the attribution it requires. The app warns in the console off localhost while `TILE_IS_DEV_ONLY` is true. |
+| `ALLOW_SAMPLE` | `false` | Synthetic demo data (`?sample=1` and the no-real-data fallback). Must stay `false` in a public build; when false the app never loads or falls back to sample data. Also don't deploy `public/data-sample/` (git-ignored; regenerate with `make_sample`). |
+
+## Data freshness and failure behaviour (Reviewer round 1)
+* Staleness is measured against **today (Central)**, not the newest date in the data: every row has `age_days`; the page shows a status banner with the newest report date, **Final vs Preliminary**, the **last successful ingest time**, and a red warning when the newest report is 2+ business days old. Rows 2+ business days old also get a "Nd old" tag; alerts ignore them.
+* Rows from a region/report line that is **missing from that report's newest edition are not exported** (history keeps them), and rows older than 7 days (`STALE_EXPIRE_DAYS`) are expired. Both are listed in `meta.dropped_rows`.
+* If **any** report fails to fetch/parse (or an in-scope report parses to zero bids) the ingest run is recorded `ok=0`, exits non-zero, and **does not export**; `public/data/` keeps the last good copy and the banner shows its age.
+* Service worker caches **only 200 same-origin responses** (never 404/500 pages); app files and data are network-first; a saved copy served offline is flagged so the page says "offline — data generated N days ago".
+* The Iowa "Mills and Processors" soybean row has **no region text in USDA's PDF**, so it can't be placed. It is now stored (`skipped_rows`), logged by the ingest, exported in `meta.skipped_rows` and listed under the table ("cannot be placed on the map"), not dropped silently.
+
+## Best bid, labels and approximation
+* Product choices are `grade · (protein) · freight`: **grades never merge** (ND soybeans US #2 FOB-T vs US #1 DLVD-T elsewhere stay separate; ND "Milling HRS" vs "HRS" separate) and delivered vs FOB are separate. Each bid shows its USDA **range**; ranking uses the top of the range (labelled as the app's reading); distance is shown on every ranked line and always labelled **straight-line miles**; sort by highest bid or closest.
+* Region bids (everything except sunflowers) are drawn at an **approximate centre this app chose**: dashed pins with "~", legend, "approximate" popups, and a note that the 300-mile cutoff is approximate for them. Only sunflower processors are called town-level (`precision: town`).
+* Basis is labelled with its exchange and month (e.g. "-90 to -80¢ vs CBOT Dec futures"): CBOT corn/soybeans, MGE spring wheat, KCBT winter wheat — Data Scout's inference, arithmetic-checked by Reviewer; labelled as the app's reading in the footer.
+* Wording: "posted about 2 to 4 pm Central", a USDA voluntary-reporting disclaimer (paraphrased, with a pointer to USDA's wording), and a footer list of what the app itself calculates (high-of-range, ranking, distances, pin positions, cents-to-dollar conversion, exchange named on basis, change since previous report).
+* Leaflet (BSD-2-Clause) and Chart.js (MIT) license texts are in `public/vendor/` and linked from the footer.
+
+## Not done / still open
+* Region→county definitions (USDA does not publish them, so region pins and the 300-mile edge stay approximate; a region whose approximate centre is just outside 300 mi may partly be inside).
+* Real push alerts, a server-side tile provider, a privacy statement, and USDA/CME written confirmation (CME risk accepted per Decisions, to be confirmed by Ridge).
 
 ## 1. USDA AMS data sources (researched 2026-10-27)
 
@@ -35,7 +70,7 @@ Two ways to read them:
   username, empty password. Gives full history (needed for backfill/charts). Rows have `trade_loc`, `commodity`, `grade`,
   `protein`, `price Min/Max`, `basis Min/Max`, `basis Min Futures Month`, `avg_price`, `report_date`…
 * **Public report PDFs, no key** — `https://www.ams.usda.gov/mnreports/ams_{slug}.pdf` (today's report only, no history).
-  Same data, and it also carries USDA's **end-of-day futures settlements** table (CBOT/KCBT/MGE) which the app uses for the futures
+  Same data, and it also carries USDA's **futures closing-settlements** table (CBOT/KCBT/MGE) which the app uses for the futures
   panel. This is what the ingest uses by default and it is **verified working** against live 2026-10-26 reports.
 
 **Key finding:** AMS reports bids by *trade region* ("North Central", "Southeast"…) for SD/ND/NE/IA/MN, **not by individual
@@ -74,9 +109,9 @@ Static site (no backend): `index.html, app.js, style.css, manifest.webmanifest, 
 * **Best bid near me**: browser geolocation (stays on-device), per-commodity cards with radius filter + top 3 runners-up.
 * **Alerts**: local rules (≥/≤ price, per location or any) in localStorage; browser notifications; checked on open and every 15 min while open; once per report day.
   **Limit:** without a server there is no true Web Push — a closed app cannot be woken. Experimental Periodic Background Sync (Chromium, installed PWA) is wired in `sw.js` but untested here and browser-throttled. Real push later = push service + small server (free tiers exist) or email/SMS digests.
-* **History**: Chart.js high/low bid lines, compare two locations, range filter. Real history is **1 day** until the daily job accumulates (or MARS backfill); `?sample=1` shows synthetic history.
+* **History**: Chart.js high/low bid lines, compare two locations, range filter. Real history is **1 day** until the daily job accumulates (or MARS backfill); synthetic history is available only with `ALLOW_SAMPLE` true.
 * Installable (manifest + service worker; Chrome fired `beforeinstallprompt` in headless test). Responsive 420 px → desktop. Offline: app shell cached, data network-first with cached fallback; map tiles are not cached.
-* SAMPLE data is always flagged: yellow banner, “(SAMPLE)” in header/popups, `is_sample=1` rows in `data/sample.db`. If real data is missing the UI falls back to sample with a notice.
+* SAMPLE data is always flagged: yellow banner, “(SAMPLE)” in header/popups, `is_sample=1` rows in `data/sample.db`. The sample fallback and `?sample=1` are disabled unless `ALLOW_SAMPLE` is true in `public/config.js`.
 
 ## Verified here
 `curl` of `/`, manifest, sw.js, app.js, data JSON, icons → 200. Headless Chrome loaded real + sample modes without JS errors, rendered map/table/best-bid/history (screenshots checked). Unit tests: parser on real PDFs (SD, sunflower), haversine, geocoding, MARS row normalizer, alert logic.
