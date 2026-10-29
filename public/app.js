@@ -17,7 +17,13 @@ function haversine(a, b, c, d) {
 const money = (r, v) => r.unit === '$/Cwt' ? '$' + v.toFixed(2) : '$' + v.toFixed(4).replace(/0{1,2}$/, '');
 const unitLbl = (r) => r.unit === '$/Cwt' ? '/cwt' : '/bu';
 const range = (r) => r.bid_low === r.bid_high ? money(r, r.bid_high) : money(r, r.bid_low) + '–' + money(r, r.bid_high);
-const basisTxt = (r) => r.basis_low == null ? '—' : (r.basis_low === r.basis_high ? r.basis_low : r.basis_low + ' to ' + r.basis_high) + '¢ vs ' + (r.basis_ref || ('futures ' + (r.basis_futures_month || '')));
+// Basis text. USDA can quote a different futures month at each end of one range ("-106F to -70X"): then each end gets its own month.
+const basisTxt = (r) => {
+  if (r.basis_low == null) return '—';
+  const lo = r.basis_ref_low || r.basis_ref || ('futures ' + (r.basis_futures_month || '')), hi = r.basis_ref_high || r.basis_ref || lo;
+  if (lo !== hi) return r.basis_low + '¢ vs ' + lo + ' to ' + r.basis_high + '¢ vs ' + hi;
+  return (r.basis_low === r.basis_high ? r.basis_low : r.basis_low + ' to ' + r.basis_high) + '¢ vs ' + lo;
+};
 // Time USDA posted a report, shown in Central Time (the zone USDA's Market News offices and the report schedule use here).
 function fmtPosted(iso, dateOnly) {
   if (!iso) return dateOnly ? 'time not available' : 'posted time not available';
@@ -79,11 +85,11 @@ function renderStatus() {
   msgs.push(`Newest USDA reports: <b>${esc(m.latest_report_date)}</b> (${reps.length ? (prelim.length ? 'some PRELIMINARY' : 'all Final') : 'status unknown'}). ` +
     `Last successful data update: <b>${esc(last ? fmtPosted(last) : 'unknown')}</b> (${esc(ago(last))}; Central Time).`);
   if (prelim.length) warn.push('Preliminary reports (' + esc(prelim.join(', ')) + ') can change when USDA finalizes them.');
-  // Per-report staleness: flag ANY single report that is 2+ business days old, even when others are current (e.g. only ND aged).
-  const stale = reps.map(([k, t]) => ({ name: t.label || k, date: t.report_date, b: bdaysBetween(t.report_date, chicagoToday()) })).filter(x => x.b >= 2);
+  // Per-report staleness (one rule, alerts-core.js): flag ANY single report that is 2+ business days old, even when others are current (e.g. only ND aged).
+  const stale = reps.map(([k, t]) => ({ name: t.label || k, date: t.report_date, b: bdaysBetween(t.report_date, chicagoToday()) })).filter(x => x.b >= GrainAlerts.DO_NOT_RELY_BDAYS);
   if (stale.length && stale.length < reps.length) warn.push(`${stale.map(x => esc(x.name) + ' (report date ' + esc(x.date) + ', ' + x.b + ' business days old)').join('; ')} ${stale.length === 1 ? 'is' : 'are'} out of date while other reports are newer. ` +
     'Those bids are tagged “Nd old” and left out of “Best bid near me” rankings, and alerts ignore them.');
-  if (ageB >= 2) warn.push(`These reports are ${ageB} business days old — newer ones may be out and not yet loaded. Do not rely on these prices.`);
+  if (ageB >= GrainAlerts.DO_NOT_RELY_BDAYS) warn.push(`These reports are ${ageB} business days old — newer ones may be out and not yet loaded. Do not rely on these prices.`);
   else if (ageB === 1) msgs.push('Today’s reports are usually posted about 2 to 4 pm Central.');
   if (state.fromCache || navigator.onLine === false) warn.push(`You appear to be offline — this is a copy saved on your device. The data was generated ${esc(ago(m.generated_at))}.`);
   if ((m.dropped_rows || []).length) msgs.push(`${m.dropped_rows.length} older/dropped row(s) are hidden because they are not in USDA’s newest report.`);
@@ -121,7 +127,7 @@ function renderAll() { renderMap(); renderTable(); renderFutures(); renderHistor
 // and the "~" region styling are this app's own overlay on top.
 const APPROX_NOTE = 'Approximate: USDA reports this as a region, and the pin is at a centre this app chose. Distance and the 300-mile cutoff are approximate too.';
 const isRegion = (r) => r.precision !== 'town';
-const tag = (r) => (r.report_status && r.report_status !== 'Final' ? ' <b class="warnTxt" title="Not final">PRELIM</b>' : '') + (r.bage > 1 ? ` <b class="warnTxt" title="Older than the latest business day">${r.bage}d old</b>` : '');
+const tag = (r) => (r.report_status && r.report_status !== 'Final' ? ' <b class="warnTxt" title="Not final">PRELIM</b>' : '') + (r.bage > GrainAlerts.MAX_RELIABLE_BDAYS ? ` <b class="warnTxt" title="Older than the latest business day">${r.bage}d old</b>` : '');
 const RING_M = 300 * 1609.344;
 let MV = null;                                      // active map adapter
 
@@ -281,9 +287,9 @@ function renderBest() {
     const cmp = sortMode === 'near' ? (a, b) => a.dist - b.dist : (a, b) => b.bid_high - a.bid_high || a.dist - b.dist;
     const inVariant = state.latest.filter(r => r.commodity === c && r.variant === variant && r.delivery === 'Current')
       .map(r => Object.assign({}, r, { dist: haversine(pos.lat, pos.lon, r.lat, r.lon) })).filter(r => r.dist <= rad);
-    // Best bid only ranks bids from a report at most 1 business day old; older ones are named in a note, never ranked.
-    const rows = inVariant.filter(r => r.bage <= 1).sort(cmp);
-    const staleRows = inVariant.filter(r => r.bage > 1);
+    // Best bid only ranks bids from a report at most MAX_RELIABLE_BDAYS (1) business day old; older ones are named in a note, never ranked.
+    const rows = inVariant.filter(r => r.bage <= GrainAlerts.MAX_RELIABLE_BDAYS).sort(cmp);
+    const staleRows = inVariant.filter(r => r.bage > GrainAlerts.MAX_RELIABLE_BDAYS);
     const top = rows[0];
     const line = (r, n) => `<li><b>#${n}</b> ${esc(r.location)}${isRegion(r) ? '<span class="muted">~</span>' : ''}: ${range(r)}${unitLbl(r)} · <b>${Math.round(r.dist)} mi</b> straight-line <span class="muted small">(${esc(postedLbl(r))})</span>${tag(r)}</li>`;
     cards.push(`<div class="card"><h3>${esc(state.meta.commodities[c])}</h3>
@@ -363,7 +369,7 @@ async function notify(title, body, tag) {
   return true;
 }
 async function checkAlerts(manual) {
-  const al = loadAlerts(), fired = GrainAlerts.evaluate(al, GrainAlerts.freshRows(state.latest, GrainAlerts.MAX_ALERT_AGE_BDAYS));   // never alert on stale rows (same rule as sw.js)
+  const al = loadAlerts(), fired = GrainAlerts.evaluate(al, GrainAlerts.freshRows(state.latest, GrainAlerts.MAX_ALERT_AGE_BDAYS));   // never alert on bids the banner says not to rely on (same rule as ranking and sw.js)
   for (const f of fired) {
     const ok = await notify(f.title, f.body, 'alert-' + f.alert.id);
     if (ok || manual) { al.find(a => a.id === f.alert.id).lastFiredDate = f.row.report_date; }

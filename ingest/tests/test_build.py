@@ -35,6 +35,15 @@ class BuildTests(unittest.TestCase):
         self.assertFalse((ROOT / "dist" / "data-sample").exists())
         self.assertFalse(any("data-sample" in str(p) for p in (ROOT / "dist").rglob("*")))
 
+    def test_test_scripts_are_not_shipped_and_nojekyll_added(self):
+        self.assertTrue(list((ROOT / "public").glob("*.test.js")), "public/ still has node tests (the exclusion must be exercised)")
+        r = self.build(None); self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual([str(p) for p in (ROOT / "dist").rglob("*.test.js")], [])
+        self.assertTrue((ROOT / "dist" / ".nojekyll").is_file())
+        self.assertTrue((ROOT / "dist" / "alerts-core.js").is_file())            # the real code beside them is still there
+        self.assertIn("*.test.js", (ROOT / "build_dist.sh").read_text())         # and the script keeps a leak check
+        self.assertIn("a *.test.js file leaked", (ROOT / "build_dist.sh").read_text())
+
     def test_pmtiles_file_is_gitignored_and_copied_when_present(self):
         gi = (ROOT / ".gitignore").read_text().split()
         self.assertIn("public/tiles/*.pmtiles", gi)                       # the ~17 MB archive is built, never committed

@@ -78,7 +78,7 @@
     <button id="btnNotif">Enable notifications</button> <button id="btnCheck">Check now</button>
     <ul id="alertList" class="alertlist"></ul>
     <details class="small"><summary>How alerts work (and their limits)</summary>
-      <p>Alerts are stored only in this browser (localStorage / IndexedDB). They are checked every time you open the app and about every 15 minutes while it is open. USDA reports are posted once per business day (about 2 to 4 pm Central), so a given alert can only fire once per day's report. Alerts ignore bids more than 2 business days old.</p>
+      <p>Alerts are stored only in this browser (localStorage / IndexedDB). They are checked every time you open the app and about every 15 minutes while it is open. USDA reports are posted once per business day (about 2 to 4 pm Central), so a given alert can only fire once per day's report. Alerts ignore any bid from a report more than 1 business day old, the same bids the app leaves out of its rankings and warns you not to rely on.</p>
       <p><b>No server = no true push.</b> Web Push needs a push service plus a server that sends messages, so a closed app cannot be woken on a schedule by this version. On Chrome/Edge (Android &amp; desktop) an <i>installed</i> app may also get Periodic Background Sync checks (experimental, browser-throttled, not guaranteed). iOS needs the app added to the Home Screen (iOS 16.4+) and only supports notifications while using a push server.</p>
     </details>
   </section>

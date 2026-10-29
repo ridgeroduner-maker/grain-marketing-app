@@ -41,10 +41,10 @@ def upsert(con, bids, futures, source_label, slug_state, report_date_for_unlocat
         lid = con.execute("SELECT id FROM locations WHERE state=? AND name=? AND section=?",
                           (state, b["location"], b["section"])).fetchone()[0]
         con.execute("""INSERT OR REPLACE INTO bids(commodity,location_id,grade,protein,bid_low,bid_high,bid_avg,unit,
-                       basis_low,basis_high,basis_unit,basis_futures_month,delivery,freight,sale_type,report_date,
-                       source_report,source_title,fetched_at,posted_at,report_status,is_sample) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)""",
+                       basis_low,basis_high,basis_unit,basis_futures_month,basis_low_month,basis_high_month,delivery,freight,sale_type,report_date,
+                       source_report,source_title,fetched_at,posted_at,report_status,is_sample) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)""",
                     (b["commodity"], lid, b["grade"], b["protein"], b["bid_low"], b["bid_high"], b["bid_avg"], b["unit"],
-                     b["basis_low"], b["basis_high"], b["basis_unit"], b["basis_futures_month"], b["delivery"],
+                     b["basis_low"], b["basis_high"], b["basis_unit"], b["basis_futures_month"], b["basis_low_month"], b["basis_high_month"], b["delivery"],
                      b["freight"], b["sale_type"], b["report_date"], b["source_report"], b["source_title"], now, posted_at, status))
         stats["kept"] += 1
     for f in futures:

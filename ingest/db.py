@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS bids (
   bid_low REAL, bid_high REAL, bid_avg REAL,   -- 'bid' for ranking = bid_high
   unit TEXT,                     -- $/Bu or $/Cwt
   basis_low REAL, basis_high REAL, basis_unit TEXT, basis_futures_month TEXT,
+  basis_low_month TEXT, basis_high_month TEXT,   -- futures month at each end of the basis range (USDA can print two, e.g. -106F to -70X)
   delivery TEXT NOT NULL DEFAULT 'Current',
   freight TEXT, sale_type TEXT,
   report_date TEXT NOT NULL,     -- YYYY-MM-DD
@@ -62,7 +63,7 @@ VIEW_SQL = """
 CREATE VIEW bids_flat AS
   SELECT b.commodity, l.state||' '||l.name AS location, l.lat, l.lon, l.geo_method, l.distance_mi,
          b.bid_high AS bid, b.bid_low, b.bid_avg, b.unit, b.basis_low, b.basis_high, b.basis_unit,
-         b.basis_futures_month, b.delivery, b.grade, b.protein, b.report_date, b.posted_at, b.source_report, b.is_sample
+         b.basis_futures_month, b.basis_low_month, b.basis_high_month, b.delivery, b.grade, b.protein, b.report_date, b.posted_at, b.source_report, b.is_sample
   FROM bids b JOIN locations l ON l.id=b.location_id;
 """
 
@@ -82,6 +83,12 @@ def _migrate(con):
                     ("skipped_rows", "grade", "TEXT"), ("skipped_rows", "protein", "TEXT"), ("skipped_rows", "freight", "TEXT"), ("outside_bids", "geo_method", "TEXT")):
         if c not in cols(t):
             con.execute(f"ALTER TABLE {t} ADD COLUMN {c} {typ}")
+    # Job 9: one futures month per end of the basis range. Older rows only had the single month, which applied to both ends.
+    for c in ("basis_low_month", "basis_high_month"):
+        if c not in cols("bids"):
+            con.execute(f"ALTER TABLE bids ADD COLUMN {c} TEXT")
+    con.execute("UPDATE bids SET basis_low_month=basis_futures_month WHERE basis_low_month IS NULL")
+    con.execute("UPDATE bids SET basis_high_month=basis_futures_month WHERE basis_high_month IS NULL")
     con.execute("DROP VIEW IF EXISTS bids_flat")
     con.executescript(VIEW_SQL)
     con.commit()

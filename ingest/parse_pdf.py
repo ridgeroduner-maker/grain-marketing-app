@@ -127,11 +127,14 @@ def parse_report(text, slug, title, state):
             mid = mid[pm.end():]
         bm = BASIS.search(mid)
         b_lo = b_hi = None
-        b_code = ""
+        b_code = b_code_hi = ""
         if bm:
             b_lo = float(bm.group(1))
             b_hi = float(bm.group(3)) if bm.group(3) is not None else b_lo
             b_code = bm.group(2)
+            # USDA sometimes prints a different futures month at each end of one range, e.g. '-106.00F to -70.00X'
+            # (Jan at the low end, Nov at the high end). Keep a month per end; a single code applies to both.
+            b_code_hi = bm.group(4) if bm.group(4) else b_code
         lo, hi = _range(t.group("price"))
         row = {
             "commodity": commodity, "heading": heading, "location": loc, "section": section,
@@ -139,7 +142,8 @@ def parse_report(text, slug, title, state):
             "grade": re.sub(r"\s*\((Bulk|Bagged)\)\s*$", "", heading),
             "bid_low": lo, "bid_high": hi, "bid_avg": float(t.group("avg")),
             "unit": price_unit, "basis_low": b_lo, "basis_high": b_hi,
-            "basis_unit": basis_unit if bm else "", "basis_futures_month": MONTH.get(b_code, ""),
+            "basis_unit": basis_unit if bm else "", "basis_futures_month": MONTH.get(b_code, ""),   # kept for old readers = month at the low end
+            "basis_low_month": MONTH.get(b_code, ""), "basis_high_month": MONTH.get(b_code_hi, ""),
             "freight": t.group("freight"), "delivery": t.group("delivery"),
             "report_date": out["report_date"], "source_report": f"AMS_{slug}",
             "source_title": title, "state": state,

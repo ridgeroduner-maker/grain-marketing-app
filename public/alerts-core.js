@@ -9,8 +9,11 @@
     return n;
   }
   const chicagoToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-  // Rows whose report is at most maxB business days old as of `today` (default: today in Central). Used by the page AND the
-  // service worker so alerts never fire on stale bids ("Alerts ignore bids more than 2 business days old").
+  // ONE staleness rule for the whole app: a bid is reliable only if its report is at most MAX_RELIABLE_BDAYS (1) business day old.
+  // At DO_NOT_RELY_BDAYS (2) the banner says "Do not rely on these prices". The page (ranking, "Nd old" tags, banner), in-page alerts
+  // and the service worker (sw.js) all read these constants, so they cannot drift apart.
+  const MAX_RELIABLE_BDAYS = 1, DO_NOT_RELY_BDAYS = MAX_RELIABLE_BDAYS + 1;
+  // Rows whose report is at most maxB business days old as of `today` (default: today in Central). Alerts never fire on anything older.
   function freshRows(rows, maxB, today) {
     today = today || chicagoToday();
     return rows.filter(r => bdaysBetween(r.report_date, today) <= maxB);
@@ -49,6 +52,6 @@
   async function kvSet(k, v) { const d = await idb(); return new Promise((res, rej) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); }
   async function kvGet(k) { const d = await idb(); return new Promise((res, rej) => { const r = d.transaction('kv').objectStore('kv').get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
 
-  root.GrainAlerts = { evaluate, kvSet, kvGet, bdaysBetween, chicagoToday, freshRows, MAX_ALERT_AGE_BDAYS: 2 };
+  root.GrainAlerts = { evaluate, kvSet, kvGet, bdaysBetween, chicagoToday, freshRows, MAX_RELIABLE_BDAYS, DO_NOT_RELY_BDAYS, MAX_ALERT_AGE_BDAYS: MAX_RELIABLE_BDAYS };
 if (typeof module !== "undefined") module.exports = root.GrainAlerts;
 })(typeof self !== 'undefined' ? self : this);

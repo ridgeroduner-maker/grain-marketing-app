@@ -34,10 +34,10 @@ def main():
             if day.weekday() >= 5:
                 continue
             s.execute("""INSERT OR REPLACE INTO bids(commodity,location_id,grade,protein,bid_low,bid_high,bid_avg,unit,
-                         basis_low,basis_high,basis_unit,basis_futures_month,delivery,freight,sale_type,report_date,
-                         source_report,source_title,fetched_at,is_sample) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)""",
+                         basis_low,basis_high,basis_unit,basis_futures_month,basis_low_month,basis_high_month,delivery,freight,sale_type,report_date,
+                         source_report,source_title,fetched_at,is_sample) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)""",
                       (r["commodity"], lid, r["grade"], r["protein"], round(l_, 4), round(h_, 4), round(a_, 4), r["unit"],
-                       r["basis_low"], r["basis_high"], r["basis_unit"], r["basis_futures_month"], r["delivery"],
+                       r["basis_low"], r["basis_high"], r["basis_unit"], r["basis_futures_month"], r["basis_low_month"], r["basis_high_month"], r["delivery"],
                        r["freight"], r["sale_type"], day.isoformat(), r["source_report"], "SAMPLE " + (r["source_title"] or ""), "SAMPLE"))
     for f in real.execute("SELECT * FROM futures WHERE report_date=(SELECT MAX(report_date) FROM futures)"):
         s.execute("INSERT OR REPLACE INTO futures(report_date,exchange,commodity,contract,settle_cents,source_report,is_sample) VALUES (?,?,?,?,?,?,1)",

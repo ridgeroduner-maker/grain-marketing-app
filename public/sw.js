@@ -1,6 +1,6 @@
 /* Service worker: offline app shell + network-first data. No server push (see README). */
 importScripts('alerts-core.js');
-const VERSION = 'grain-v7';
+const VERSION = 'grain-v8';
 const SHELL = ['./', 'index.html', 'config.js', 'mapmode.js', 'app.js', 'alerts-core.js', 'style.css', 'manifest.webmanifest', 'terms.html', 'privacy.html',
   'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/chart.umd.js', 'vendor/protomaps-leaflet.js',
   'vendor/images/marker-icon.png', 'vendor/images/marker-icon-2x.png', 'vendor/images/marker-shadow.png',
@@ -43,7 +43,7 @@ async function checkAlerts() {
   const alerts = (await GrainAlerts.kvGet('alerts')) || [];
   if (!alerts.length) return;
   const latest = await (await fetch('data/latest.json', { cache: 'no-store' })).json();
-  // same rule the page states: ignore bids from reports more than 2 business days old
+  // same rule as the page (alerts-core.js MAX_RELIABLE_BDAYS): ignore bids the banner says not to rely on
   const fired = GrainAlerts.evaluate(alerts, GrainAlerts.freshRows(latest, GrainAlerts.MAX_ALERT_AGE_BDAYS));
   for (const f of fired) {
     f.alert.lastFiredDate = f.row.report_date;

@@ -76,6 +76,7 @@ def normalize_rows(rows, slug, title, state):
         hi = hi if hi is not None else lo
         fut = r.get("basis Min Futures Month") or ""
         m = re.search(r"\(([A-Z])\)", fut)
+        mh = re.search(r"\(([A-Z])\)", r.get("basis Max Futures Month") or "") or m
         prot = r.get("protein") or ""
         row = {
             "commodity": com, "heading": r.get("grade") or r.get("commodity"), "location": loc,
@@ -87,6 +88,7 @@ def normalize_rows(rows, slug, title, state):
             "basis_low": r.get("basis Min"), "basis_high": r.get("basis Max"),
             "basis_unit": r.get("basis_unit") or "",
             "basis_futures_month": MONTH.get(m.group(1), "") if m else "",
+            "basis_low_month": MONTH.get(m.group(1), "") if m else "", "basis_high_month": MONTH.get(mh.group(1), "") if mh else "",
             "freight": f"{r.get('freight') or ''}-{r.get('trans_mode') or ''}".strip("-"),
             "delivery": "Current" if (r.get("current") or "").lower() == "yes" else (r.get("delivery_start") or "Deferred"),
             "report_date": d, "source_report": f"AMS_{slug}", "source_title": title,
