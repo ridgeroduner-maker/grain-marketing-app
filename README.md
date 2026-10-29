@@ -98,14 +98,14 @@ To use a raster provider anyway: set `MAP_TILES_URL` to its `https://…/{z}/{x}
 
 **Recommended CSP when hosting** (tested here on the map page with the default setup: map tiles, pins and ring rendered and no console violations; a `<meta>` copy is not shipped in `index.html`, so add it as a response header or meta tag at your host): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'`. Other tabs (History charts, alerts) were not run under this CSP.
 
-**Caching.** `sw.js` (v6) ignores cross-origin requests and `.pmtiles` requests (a cached 200 copy would break range reads) and does not precache the tile file, so the map needs the network; offline you get the plain map with the notice. Tests assert both rules.
+**Caching.** `sw.js` (v7) ignores cross-origin requests and `.pmtiles` requests (a cached 200 copy would break range reads) and does not precache the tile file, so the map needs the network; offline you get the plain map with the notice. Tests assert both rules.
 
 **Privacy**: with the default setup the map makes no third-party requests. A raster provider or `osm-dev` would see visitors' IP addresses and map areas.
 
 ## Draft legal pages (Job 7) - **DRAFT, not legal advice, have a lawyer review**
-`public/terms.html` and `public/privacy.html` are **drafts written for Ridge's review**, not legal advice and not final. Each file carries a red "DRAFT - not legal advice, have a lawyer review" banner at the top. They are plain static pages with the site's styling (no JavaScript, mobile-friendly), linked from the footer of `index.html` and to each other, copied into `dist/` by `build_dist.sh` (the build fails if either is missing). Everything still to be supplied is a yellow **`[[PLACEHOLDER]]`**: `[[OWNER LEGAL NAME]]`, `[[CONTACT EMAIL]]`, `[[EFFECTIVE DATE]]`, `[[GOVERNING STATE: likely South Dakota, Ridge to confirm]]`, `[[HOST: GitHub Pages is the intended host - TBD ...]]`, plus a few `[[LAWYER: ...]]` / `[[OWNER TO CONFIRM ...]]` notes. Nothing (name, email, date) was invented. **Remove the DRAFT banner only after review.**
+`public/terms.html` and `public/privacy.html` are **drafts written for Ridge's review**, not legal advice and not final. Each file carries a red "DRAFT - not legal advice, have a lawyer review" banner at the top. They are plain static pages with the site's styling (no JavaScript, mobile-friendly), linked from the footer of `index.html` and to each other, copied into `dist/` by `build_dist.sh` (the build fails if either is missing). Everything still to be supplied is a yellow **`[[PLACEHOLDER]]`**: `[[EFFECTIVE DATE]]` (set it on publish day). Owner ("Ridge Roduner (an individual)"), contact email (ridgeroduner@gmail.com, supplied by Ridge via Bobby for publication; used only on the two legal pages), host (GitHub Pages) and governing state (South Dakota) are now filled in as facts. Other notes still in the pages: `[[LAWYER: ...]]` / `[[OWNER TO CONFIRM ...]]` notes. Nothing was invented: the name and email came from Ridge; the date is still a placeholder. **Remove the DRAFT banner only after review.**
 
-**Service worker**: both pages are precached (`sw.js` SHELL, cache version bumped `grain-v5` to `grain-v6`) so the footer links work offline in an installed app; after that they are served network-first like other app files, so edits reach people. A test checks every precached file exists.
+**Service worker**: both pages are precached (`sw.js` SHELL, cache version bumped `grain-v5` to `grain-v6` in Job 7 and to `grain-v7` in Job 8 when the page text changed) so the footer links work offline in an installed app; after that they are served network-first like other app files, so edits reach people. A test checks every precached file exists.
 
 **What the Privacy Policy says, and where I checked it in the code** (tests in `ingest/tests/test_legal.py` keep this true):
 * **No accounts / no server-side user data**: no sign-in or server code in `public/`; the only network calls are same-site (`data/*.json`, `sw.js` fetching `data/latest.json`, a Range probe of `tiles/plains.pmtiles`). None carries alerts, location or settings.
@@ -114,19 +114,17 @@ To use a raster provider anyway: set `MAP_TILES_URL` to its `https://…/{z}/{x}
 * **Notifications**: permission requested only from the "Enable notifications" button; alerts are evaluated on the device; the page registers Chrome Periodic Background Sync if available (browser-gated, experimental); no push server.
 * **Cookies/analytics**: no `document.cookie`/cookieStore, no analytics, ads or beacons in the app or vendored libraries (scan of `dist/`).
 * **External requests**: scan of the built `dist/` found no external scripts, styles, fonts, images or CDNs; the only absolute URLs are plain links (USDA, OpenStreetMap, Protomaps, ODbL, Leaflet, Chart.js) and the OSM dev tile URL in `mapmode.js`, used only on localhost with `MAP_TILES_URL` empty. Headless Chrome loaded the index, terms and privacy pages with every resource coming from the one local host and empty `document.cookie`.
-* **Host**: GitHub Pages named as the intended host, marked TBD; the page says host logs are the host's.
+* **Host**: Ridge confirmed GitHub Pages (relayed by Bobby, Job 8). The privacy page names it, says GitHub may log requests (e.g. IP address) under its own policy, and links GitHub's General Privacy Statement (URL fetched and checked 2026-10-28; its effective date was shown as April 27, 2026). The Terms say they are governed by South Dakota law, also confirmed by Ridge. The `[[LAWYER: courts / venue / dispute process]]` note stays. Nothing is deployed yet.
 
 **Open questions for Ridge**
-1. Legal name of the owner (person or business) to put in `[[OWNER LEGAL NAME]]`?
-2. A contact email for `[[CONTACT EMAIL]]` (a role address you are happy to publish)?
-3. Effective date (the day you publish after review)?
-4. Governing state (likely South Dakota) and any venue/dispute wording?
-5. Is GitHub Pages really the host? Can you see any of its logs or statistics (the draft says only that the host keeps its own)? If you switch to a keyed or outside map provider, the privacy page must change first.
-6. CME Group: you accepted the display risk; does the lawyer want a permission, a different credit line, or `FUTURES_DISPLAY=basis_only`?
-7. Is the liability limit enforceable as written in your state, and do you want a dollar cap?
-8. Do you want a "forget my location" button (today it is cleared only by clearing site data)?
-9. Children's wording and any state-law notices (the draft claims no personal data is collected by the app itself).
-10. Should the footer say "draft" until review, or should the links stay hidden until launch?
+1. Effective date (the day you publish after review)?
+2. Any venue/dispute wording for the lawyer note (state law is settled: South Dakota)?
+3. Can you see any GitHub Pages logs or statistics? (The `[[OWNER TO CONFIRM]]` note on the privacy page asks.) If you ever switch the host or to an outside/keyed map provider, the privacy page must change first.
+4. CME Group: you accepted the display risk; does the lawyer want a permission, a different credit line, or `FUTURES_DISPLAY=basis_only`?
+5. Is the liability limit enforceable as written in your state, and do you want a dollar cap?
+6. Do you want a "forget my location" button (today it is cleared only by clearing site data)?
+7. Children's wording and any state-law notices (the draft claims no personal data is collected by the app itself).
+8. Should the footer say "draft" until review, or should the links stay hidden until launch?
 
 ## Not done / still open
 * Region→county definitions (USDA does not publish them, so region pins and the 300-mile edge stay approximate; a region whose approximate centre is just outside 300 mi may partly be inside).
@@ -197,6 +195,7 @@ Static site (no backend): `index.html, app.js, style.css, manifest.webmanifest, 
 * SAMPLE data is always flagged: yellow banner, “(SAMPLE)” in header/popups, `is_sample=1` rows in `data/sample.db`. The sample fallback and `?sample=1` are disabled unless `ALLOW_SAMPLE` is true in `public/config.js`.
 
 ## Verified here
+Job 8 (2026-10-28): host = GitHub Pages and governing state = South Dakota written into the draft pages (owner name and contact email also filled in; `[[EFFECTIVE DATE]]` and the lawyer notes remain); fetched GitHub's privacy statement page (it loads, and says it logs IP address and similar service-usage data); tests and a headless Chrome check re-run (see below). **Not verified**: that the Ridge confirmation came from Ridge (relayed by Bobby), GitHub's actual Pages log retention.
 Job 7 (2026-10-27): headless Chrome on `serve.py`: terms and privacy pages at 390 px and 1200 px wide, no horizontal overflow, DRAFT banner and highlighted placeholders visible, no console errors, only the local host contacted, `document.cookie` empty; the index footer links to both; the service worker installed cache `grain-v6` containing `/terms.html` and `/privacy.html` and no `.pmtiles`. Tests: 47 python (12 new in `test_legal.py`), `alerts-core.test.js`, `mapmode.test.js`. **Not verified**: legal accuracy (no lawyer), real host logging behaviour, other browsers/phones, screen-reader pass of the new pages.
 Job 6 (2026-10-27): the extract was really built with `./build_tiles.sh` (free CLI, no account; 17 MB, `pmtiles verify` ok) and served by `serve.py` with Range support. Headless Chrome (CDP): (a) on `localhost` and (b) on a non-localhost host name, **real map tiles rendered** (16 tile canvases, roads/labels/states visible, 18 pins, ring, attribution "Leaflet | © OpenStreetMap contributors · Protomaps basemap", no console errors, no notice); (c) a host that ignores Range (python `http.server`) gave the plain map with the notice "the web host does not support HTTP Range requests (it answered 200, not 206)"; (d) file missing gave the notice "…is not on the server — build it with ./build_tiles.sh"; (e) an unreachable raster URL gave the plain map and notice after 4 failed tiles; (f) with a strict CSP meta (see Map) the map rendered with no violations. WebGL is not needed. **Not verified**: any real static host (GitHub Pages/Netlify/Cloudflare) because nothing was deployed (host behaviour comes from the docs/issue linked above); raster providers (no accounts); OSM dev tiles on localhost in this job; Firefox/Safari; phones; the service worker + map offline path in a browser. Tests: 35 python, `alerts-core.test.js`, `mapmode.test.js`.
 Job 5 (2026-10-27, superseded map parts): the Google Maps adapter described there was removed in Job 6; the stale-report, outside-radius and a11y checks still apply.

@@ -7,7 +7,7 @@ PUBLIC = ROOT / "public"
 DRAFT = "DRAFT - not legal advice, have a lawyer review"
 # Hosts that may appear as plain links (or, for the OSM tile URL, as the localhost-only dev tile source) in the app's own files.
 LINK_HOSTS = {"mymarketnews.ams.usda.gov", "www.openstreetmap.org", "openstreetmap.org", "opendatacommons.org", "github.com", "leafletjs.com",
-              "operations.osmfoundation.org", "protomaps.com", "www.chartjs.org", "www.w3.org", "x.invalid", "example.com"}
+              "operations.osmfoundation.org", "protomaps.com", "www.chartjs.org", "www.w3.org", "docs.github.com", "x.invalid", "example.com"}
 DEV_ONLY_TILE_HOST = "tile.openstreetmap.org"      # only in mapmode.js, used only on localhost with MAP_TILES_URL empty
 TRACKERS = ["googleapis.com", "gstatic.com", "google-analytics", "googletagmanager", "doubleclick.net", "facebook.net", "cloudflareinsights", "jsdelivr.net",
             "unpkg.com", "cdnjs.", "bootstrapcdn", "fontawesome", "typekit", "hotjar", "segment.io", "segment.com", "mixpanel", "sentry.io", "plausible.io", "matomo", "fullstory"]
@@ -48,18 +48,47 @@ class LegalPages(unittest.TestCase):
 
     def test_privacy_content(self):
         t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", read(PUBLIC / "privacy.html"))).lower()
-        for must in ["no accounts", "local storage", "indexeddb", "use my location", "never sent", "no cookies", "no analytics", "github pages", "tbd", "logs",
+        for must in ["no accounts", "local storage", "indexeddb", "use my location", "never sent", "no cookies", "no analytics", "github pages", "logs",
                      "same site", "clear this site"]:
             self.assertIn(must, t, must)
 
     def test_placeholders_present_and_nothing_invented(self):
         for name in self.pages:
             h = read(PUBLIC / name)
-            for ph in ["[[OWNER LEGAL NAME]]", "[[CONTACT EMAIL]]", "[[EFFECTIVE DATE]]"]: self.assertIn(ph, h, f"{name} {ph}")
-            self.assertFalse(re.search(r"[A-Za-z0-9._+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}", h), f"{name}: no real email address")
+            self.assertIn("[[EFFECTIVE DATE]]", h, name)                                   # still to be set on publish day
+            for filled in ("[[OWNER LEGAL NAME]]", "[[CONTACT EMAIL]]"): self.assertNotIn(filled, h, f"{name} {filled} should be filled")
+            self.assertIn("Ridge Roduner (an individual)", h)
+            self.assertIn('<a href="mailto:ridgeroduner@gmail.com">ridgeroduner@gmail.com</a>', h)
+            self.assertEqual(set(re.findall(r"[A-Za-z0-9._+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}", h)), {"ridgeroduner@gmail.com"}, f"{name}: only the owner-supplied email")
             self.assertFalse(re.search(r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, 20\d\d", re.sub(r"<[^>]+>", " ", h)), f"{name}: no invented date")
-        self.assertIn("[[GOVERNING STATE: likely South Dakota, Ridge to confirm]]", read(PUBLIC / "terms.html"))
-        self.assertIn("[[HOST: GitHub Pages is the intended host - TBD", read(PUBLIC / "privacy.html"))
+        # answered by Ridge (via Bobby): governing state and host are now facts, so their placeholders must be gone; lawyer notes and the rest stay
+        terms, priv = read(PUBLIC / "terms.html"), read(PUBLIC / "privacy.html")
+        for gone in ("[[GOVERNING STATE", "[[HOST", "TBD"):
+            self.assertNotIn(gone, terms); self.assertNotIn(gone, priv)
+        self.assertIn("[[LAWYER: courts / venue / dispute process, if any]]", terms)
+        self.assertIn("[[LAWYER:", terms); self.assertIn("[[LAWYER:", priv); self.assertIn("[[OWNER TO CONFIRM", priv)
+
+    def test_owner_email_only_on_legal_pages(self):
+        for p in app_files(PUBLIC):
+            if p.name in ("terms.html", "privacy.html"): continue
+            self.assertNotIn("ridgeroduner", read(p).lower(), p.name)
+
+    def test_only_expected_placeholders_remain(self):
+        allowed = {"terms.html": {"[[EFFECTIVE DATE]]", "[[double square brackets]]", "[[OWNER TO CONFIRM WITH LAWYER: whether showing futures settlements needs any permission from CME Group; the owner has decided to show them with USDA credit]]"},
+                   "privacy.html": {"[[EFFECTIVE DATE]]", "[[double square brackets]]"}}
+        for name in self.pages:
+            found = set(re.findall(r"\[\[[^\]]+\]\]", read(PUBLIC / name)))
+            for ph in found:
+                self.assertTrue(ph in allowed[name] or ph.startswith(("[[LAWYER", "[[OWNER TO CONFIRM")), f"{name}: unexpected placeholder {ph}")
+            self.assertIn("[[EFFECTIVE DATE]]", found)
+
+    def test_south_dakota_and_github_pages_facts(self):
+        terms = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", read(PUBLIC / "terms.html")))
+        self.assertRegex(terms, r"governed by the laws of the State of South Dakota")
+        priv = read(PUBLIC / "privacy.html"); host = priv.split('id="host"', 1)[1].split("</section>", 1)[0]
+        hosttext = re.sub(r"<[^>]+>", "", host)
+        self.assertIn("is hosted on GitHub Pages", hosttext); self.assertIn("IP address", hosttext); self.assertIn("under its own policy", hosttext)
+        self.assertIn('href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"', host)
 
     def test_footer_links_and_cross_links(self):
         idx = read(PUBLIC / "index.html")
@@ -71,7 +100,7 @@ class LegalPages(unittest.TestCase):
         sw = read(PUBLIC / "sw.js")
         shell = sw.split("const SHELL = [", 1)[1].split("];", 1)[0]
         self.assertIn("'terms.html'", shell); self.assertIn("'privacy.html'", shell)
-        self.assertRegex(sw, r"const VERSION = 'grain-v([6-9]|\d\d)'")          # bumped when the shell list changed (v5 -> v6)
+        self.assertRegex(sw, r"const VERSION = 'grain-v([7-9]|\d\d)'")          # bumped when the precached legal pages changed (v5 -> v6 -> v7)
         for f in re.findall(r"'([^']+)'", shell):                                # every precached file exists (addAll fails the whole install otherwise)
             if f != "./": self.assertTrue((PUBLIC / f).exists(), f)
 
