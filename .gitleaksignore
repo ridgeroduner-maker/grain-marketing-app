@@ -1,0 +1,5 @@
+# Reviewed 2026-10-28: dummy values used only by tests (sequential 'abcdefghijklmnop' fake keys), not real credentials.
+4a8b425ea48dd3d438f05e48d673c6d77ad5cd0c:ingest/tests/test_build.py:generic-api-key:6
+f68e0966ede7ef6885a608319f648bf48f09c034:public/mapmode.test.js:gcp-api-key:5
+f68e0966ede7ef6885a608319f648bf48f09c034:ingest/tests/test_build.py:generic-api-key:6
+ingest/tests/test_build.py:generic-api-key:6

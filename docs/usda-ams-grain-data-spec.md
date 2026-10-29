@@ -194,7 +194,7 @@ State-extent corner checks: SD – all four corners 167–280 mi (**whole state 
 
 ## 7. Parsed samples (real, 2026-10-26 reports)
 
-Parsed by a throwaway script (`/workspace/parse_ams.py`) from `pdftotext -layout` of S5 and S10. Raw strings kept (`basis_raw`, `price_raw`) so the future parser can split ranges. Unit reminders: basis in ¢/bu with trailing futures-month letter; prices $/bu (sunflower $/cwt). I did **not** get JSON from the API (key required).
+Parsed by a throwaway script (`data-scout/parse_ams.py`) from `pdftotext -layout` of S5 and S10. Raw strings kept (`basis_raw`, `price_raw`) so the future parser can split ranges. Unit reminders: basis in ¢/bu with trailing futures-month letter; prices $/bu (sunflower $/cwt). I did **not** get JSON from the API (key required).
 
 ```jsonc
 // Futures block (S5): ¢/bu
