@@ -55,12 +55,14 @@ class LegalPages(unittest.TestCase):
     def test_placeholders_present_and_nothing_invented(self):
         for name in self.pages:
             h = read(PUBLIC / name)
-            self.assertIn("[[EFFECTIVE DATE]]", h, name)                                   # still to be set on publish day
+            self.assertNotIn("[[EFFECTIVE DATE]]", h, name)                                # set by the owner's instruction (Oct 28, 2026)
+            self.assertIn("Effective date: October 28, 2026 &middot;", h, name)
             for filled in ("[[OWNER LEGAL NAME]]", "[[CONTACT EMAIL]]"): self.assertNotIn(filled, h, f"{name} {filled} should be filled")
             self.assertIn("Ridge Roduner (an individual)", h)
             self.assertIn('<a href="mailto:ridgeroduner@gmail.com">ridgeroduner@gmail.com</a>', h)
             self.assertEqual(set(re.findall(r"[A-Za-z0-9._+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}", h)), {"ridgeroduner@gmail.com"}, f"{name}: only the owner-supplied email")
-            self.assertFalse(re.search(r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, 20\d\d", re.sub(r"<[^>]+>", " ", h)), f"{name}: no invented date")
+            dates = re.findall(r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, 20\d\d", re.sub(r"<[^>]+>", " ", h))
+            self.assertEqual(dates, ["October 28, 2026"], f"{name}: the only date is the owner-set effective date")
         # answered by Ridge (via Bobby): governing state and host are now facts, so their placeholders must be gone; lawyer notes and the rest stay
         terms, priv = read(PUBLIC / "terms.html"), read(PUBLIC / "privacy.html")
         for gone in ("[[GOVERNING STATE", "[[HOST", "TBD"):
@@ -74,13 +76,13 @@ class LegalPages(unittest.TestCase):
             self.assertNotIn("ridgeroduner", read(p).lower(), p.name)
 
     def test_only_expected_placeholders_remain(self):
-        allowed = {"terms.html": {"[[EFFECTIVE DATE]]", "[[double square brackets]]", "[[OWNER TO CONFIRM WITH LAWYER: whether showing futures settlements needs any permission from CME Group; the owner has decided to show them with USDA credit]]"},
-                   "privacy.html": {"[[EFFECTIVE DATE]]", "[[double square brackets]]"}}
+        allowed = {"terms.html": {"[[double square brackets]]", "[[OWNER TO CONFIRM WITH LAWYER: whether showing futures settlements needs any permission from CME Group; the owner has decided to show them with USDA credit]]"},
+                   "privacy.html": {"[[double square brackets]]"}}
         for name in self.pages:
             found = set(re.findall(r"\[\[[^\]]+\]\]", read(PUBLIC / name)))
             for ph in found:
                 self.assertTrue(ph in allowed[name] or ph.startswith(("[[LAWYER", "[[OWNER TO CONFIRM")), f"{name}: unexpected placeholder {ph}")
-            self.assertIn("[[EFFECTIVE DATE]]", found)
+            self.assertNotIn("[[EFFECTIVE DATE]]", found)
 
     def test_south_dakota_and_github_pages_facts(self):
         terms = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", read(PUBLIC / "terms.html")))
