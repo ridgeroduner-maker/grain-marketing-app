@@ -5,7 +5,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "deploy"))
 import ci_check
-WF = (ROOT / ".github" / "workflows" / "pages.yml").read_text()
+LIVE_WF = ROOT / ".github" / "workflows" / "pages.yml"          # absent until launch (see README "Launch checklist"): pushing it needs gh's `workflow` scope
+DOC_WF = ROOT / "docs" / "pages.yml.txt"                        # the saved copy that is committed as plain docs
+WF = (LIVE_WF if LIVE_WF.exists() else DOC_WF).read_text()      # the tests below always check whichever copy exists
 CODE = "\n".join(re.sub(r"\s+#.*$", "", l) for l in WF.splitlines() if not l.lstrip().startswith("#"))     # comments dropped (no '#' inside any value)
 OFFICIAL = {"actions/checkout", "actions/setup-python", "actions/configure-pages", "actions/upload-pages-artifact", "actions/deploy-pages", "actions/cache"}
 
@@ -17,6 +19,12 @@ def job_block(name):
 
 
 class WorkflowFileTests(unittest.TestCase):
+    def test_saved_copy_exists_and_matches_the_live_file_if_present(self):
+        self.assertTrue(DOC_WF.is_file(), "docs/pages.yml.txt (the copy added at launch) must exist")
+        if LIVE_WF.exists():
+            self.assertEqual(LIVE_WF.read_text(), DOC_WF.read_text(), "the live workflow and the docs copy must be identical")
+        self.assertFalse((ROOT / "public" / "pages.yml.txt").exists())
+
     def test_only_official_actions_pinned_to_full_sha(self):
         uses = re.findall(r"^\s*(?:-\s*)?uses:\s*(\S+)", CODE, re.M)
         self.assertGreaterEqual(len(uses), 6)

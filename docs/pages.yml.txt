@@ -1,0 +1,148 @@
+# Publish Grain Bids to GitHub Pages and refresh the USDA data every business day.
+#
+# STATUS: PREPARED AS A FILE ONLY - NOT ACTIVE. It does nothing until all of this happens (see README "Launch checklist"):
+#   1. this file is merged into the default branch (scheduled and manually dispatched workflows only run from the default branch),
+#   2. the repo visibility / GitHub plan question is settled (Pages from a private repo needs a paid plan),
+#   3. Settings > Pages > Source = "GitHub Actions" is switched on by the owner (configure-pages below does NOT enable Pages for you).
+# Until then there is no deployment and nothing can be published from here. It is also never triggered by pushes to build/v1.
+#
+# No secrets are used or needed: USDA's PDF reports and the MARS "published time" lookup are keyless. Nothing is written back to the repo.
+name: Publish to GitHub Pages
+
+on:
+  push:
+    branches: [main]            # publish when the code on main changes (only after the owner merges build/v1)
+  schedule:
+    # USDA posts these reports about 2 to 4 pm Central on business days (the saved reports show posting times from 1:50 pm to 3:17 pm).
+    # GitHub cron runs in UTC and does not follow daylight saving time, so each run is listed so that it lands AFTER 4 pm Central in
+    # BOTH zones: US daylight time (CDT, UTC-5, until Nov 1 2026) and standard time (CST, UTC-6).
+    #   Run 1: 23:07 UTC Mon-Fri = 6:07 pm CDT / 5:07 pm CST  (evening run)
+    #   Run 2: 02:07 UTC Tue-Sat = 9:07 pm CDT / 8:07 pm CST  (later catch-up if USDA was late or run 1 failed); the UTC date has
+    #          already rolled over, so Tue-Sat UTC is Mon-Fri evening Central.
+    # Odd minutes (07) avoid the busy top of the hour, where GitHub may delay or drop scheduled runs.
+    # Note: GitHub now also accepts a `timezone: "America/Chicago"` key on a schedule entry, which would avoid the DST shift; the UTC form is
+    # used here because it is the long-standing syntax and cannot be mis-parsed. Holidays are not modelled: the run just republishes.
+    - cron: '7 23 * * 1-5'
+    - cron: '7 2 * * 2-6'
+  workflow_dispatch:
+    inputs:
+      accept_row_drop:
+        description: "Publish even if the bid row count fell sharply versus the last published data (only after you checked the drop is real)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read                # least privilege: the build job only reads the repo
+
+concurrency:
+  group: pages                  # one publish at a time; never cancel one that is mid-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      # Actions are pinned to full commit SHAs (the tag is in the comment). Versions checked 2026-10-28 on each action's releases page.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "Configure Pages (does not enable Pages; fails here until the owner sets Pages source to GitHub Actions)"
+        id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6.0.0
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pdftotext (poppler-utils)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+
+      - name: Run the test suites (a broken change must not publish)
+        run: |
+          python3 -m unittest discover -s ingest/tests
+          node public/alerts-core.test.js
+          node public/mapmode.test.js
+
+      # Price history lives in a small SQLite file that is git-ignored. It is kept in the Actions cache between runs (cache entries not
+      # used for 7 days are evicted; daily runs keep it alive). The cache is saved only if the whole job succeeds, so a failed or
+      # rejected run can never overwrite the last good database. If it is ever lost, the next run starts a fresh history from that
+      # day's reports; prices are unaffected.
+      - name: Restore price-history database
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: data/grain.db
+          key: grain-db-${{ github.run_id }}
+          restore-keys: grain-db-
+
+      # Safety baseline for the row-count guard = what is live right now (falls back to the committed data on the very first publish).
+      - name: Use the live site's data as the row-count baseline
+        env:
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          if curl -fsS --retry 2 -m 30 "${BASE_URL%/}/data/latest.json" -o "$RUNNER_TEMP/live_latest.json" \
+             && python3 -c "import json,sys; d=json.load(open(sys.argv[1])); assert isinstance(d,list) and len(d)>0" "$RUNNER_TEMP/live_latest.json"; then
+            cp "$RUNNER_TEMP/live_latest.json" public/data/latest.json
+            echo "baseline: live site ($(python3 -c "import json,sys; print(len(json.load(open(sys.argv[1]))))" public/data/latest.json) rows)"
+          else
+            echo "baseline: committed public/data/latest.json (no live site yet)"
+          fi
+
+      # FAIL-SAFE: ingest exits non-zero if ANY report fails to fetch/parse or the row-count guard trips; export then does not run, this
+      # step fails, the deploy job never starts, and the previously published site (and its data) stays exactly as it was.
+      - name: Ingest USDA reports and export the data
+        env:
+          ACCEPT_DROP: ${{ inputs.accept_row_drop }}
+        run: |
+          args=(--source pdf --export)
+          if [ "$ACCEPT_DROP" = "true" ]; then args+=(--accept-row-drop); fi
+          python3 -m ingest.ingest "${args[@]}"
+
+      - name: Check the exported data (rows, dates, shape)
+        run: python3 deploy/ci_check.py data
+
+      # Map tiles (self-hosted PMTiles, ~17 MB). Two ways to have them; see README "Launch checklist" (Decision: the map file):
+      #  (a) the owner commits public/tiles/plains.pmtiles (under GitHub's 50 MiB warning / 100 MiB block per file) -> the steps below are skipped, or
+      #  (b) default: built here once with the pinned pmtiles CLI and then kept in the cache (key v1; bump the v1 to refresh the map).
+      # A failed tile build does NOT block the daily price update: the app falls back to its plain map with a notice.
+      - name: Restore cached map tiles
+        id: tilecache
+        if: hashFiles('public/tiles/plains.pmtiles') == ''
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: public/tiles/plains.pmtiles
+          key: pmtiles-v1-${{ hashFiles('build_tiles.sh', 'public/config.js') }}
+
+      - name: Build map tiles (pinned pmtiles CLI, SHA-256 verified)
+        if: hashFiles('public/tiles/plains.pmtiles') == '' && steps.tilecache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        run: |
+          ./deploy/install_pmtiles.sh "$RUNNER_TEMP/bin"
+          PMTILES_BIN="$RUNNER_TEMP/bin/pmtiles" ./build_tiles.sh \
+            || echo "::warning::Map tiles could not be built; publishing with the plain-map fallback."
+
+      - name: Build dist/
+        run: ./build_dist.sh
+
+      - name: Check dist/ (no test files or sample data, .nojekyll present, data matches the export)
+        run: python3 deploy/ci_check.py dist
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+        with:
+          path: dist
+          include-hidden-files: true   # without this the artifact drops .nojekyll
+
+  deploy:
+    needs: build                # only runs if every build step above succeeded
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write              # publish to Pages
+      id-token: write           # lets deploy-pages verify the deployment comes from this workflow
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1

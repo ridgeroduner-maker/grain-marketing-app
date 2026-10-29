@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install the free `pmtiles` CLI (go-pmtiles) from a PINNED GitHub release and verify its SHA-256 before running it.
-# Used by .github/workflows/pages.yml (Linux x86_64 runner) and usable locally on Linux x86_64:
+# Used by the Pages workflow (docs/pages.yml.txt, added as .github/workflows/pages.yml at launch) (Linux x86_64 runner) and usable locally on Linux x86_64:
 #   ./deploy/install_pmtiles.sh /some/dir     # puts /some/dir/pmtiles on disk; then PMTILES_BIN=/some/dir/pmtiles ./build_tiles.sh
 # To upgrade: pick a release at https://github.com/protomaps/go-pmtiles/releases, download the Linux_x86_64 tar.gz, run sha256sum on it
 # (GitHub also shows each asset's sha256 digest on the release), and change VERSION and SHA256 below together.
