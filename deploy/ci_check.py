@@ -55,7 +55,7 @@ def check_data(data_dir, min_rows=30, max_age_days=5, today=None):
 def check_dist(dist_dir, data_dir):
     d, bad = Path(dist_dir), []
     for need in ("index.html", "app.js", "sw.js", "config.js", "style.css", "manifest.webmanifest", "terms.html", "privacy.html",
-                 ".nojekyll", "data/latest.json", "data/meta.json"):
+                 ".nojekyll", "data/latest.json", "data/meta.json", "data/directory.json"):
         if not (d / need).is_file():
             bad.append(f"dist/{need} is missing")
     if list(d.rglob("*.test.js")):

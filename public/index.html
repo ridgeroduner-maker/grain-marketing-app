@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Grain Bids near Gann Valley, SD</title>
 <meta name="theme-color" content="#2f5d1f">
@@ -42,6 +43,18 @@
         <div id="mapNotice" class="banner note" role="status" hidden></div>
         <div id="map" role="region" aria-label="Map of grain bid locations (the table beside it lists the same bids)"></div>
         <p id="legendBox" class="small muted maplegend"></p>
+        <div id="dirPanel" class="dirpanel">
+          <p class="dirtoggle"><input type="checkbox" id="dirToggle" aria-describedby="dirStatus"> <label for="dirToggle"><b>Directory only, NOT bids</b> &mdash; Licensed grain buyers and warehouses from state lists. Names and towns only. No prices.</label></p>
+          <p id="dirStatus" class="small muted" role="status" aria-live="polite">Directory layer is off.</p>
+          <p id="dirKey" class="small muted maplegend" hidden><span class="dir-key"></span> grey diamond = directory listing, <b>not a bid</b> (no price); <span class="dir-key-n">12</span> numbered grey square = that many listings close together (select it to zoom in)</p>
+          <p id="dirNote" class="small muted" hidden>For farmers&rsquo; information only. Do not use this directory to build mailing, calling or sales lists. South Dakota&rsquo;s Public Utilities Commission says its list &ldquo;should not be used for solicitation.&rdquo; Wrong name, wrong town, closed, or a firm that wants to be corrected or removed? Email <a href="mailto:ridgeroduner@gmail.com?subject=Directory%20correction">ridgeroduner@gmail.com</a> with the firm name and town. Please don&rsquo;t send personal details.</p>
+          <div id="dirListWrap" hidden>
+            <details id="dirList"><summary>Directory list (not bids) &mdash; the same listings as the grey diamonds, as a table</summary>
+              <p><label>Find a firm or town <input type="search" id="dirFilter" autocomplete="off"></label> <span id="dirListCount" class="small muted" role="status"></span></p>
+              <div class="tablewrap dirtable"><table><caption class="small muted">Directory only, NOT bids. Names and towns only.</caption><thead><tr><th>Firm</th><th>Town</th><th>Category</th><th>Map</th></tr></thead><tbody id="dirRows"></tbody></table></div>
+            </details>
+          </div>
+        </div>
         <p id="mapCredit" class="small muted"></p>
       </div>
       <div class="side">
@@ -95,9 +108,10 @@
 </main>
 
 <footer>
-  <p><b>Source: USDA Agricultural Marketing Service (AMS) Livestock, Poultry &amp; Grain Market News</b> — reports SD 3186, ND 3878, NE 3225, S. MN 3049, IA 2850, sunflowers 2887, at <a href="https://mymarketnews.ams.usda.gov/">mymarketnews.ams.usda.gov</a>. Reports are posted about 2 to 4 pm Central each business day; the “Posted” time is when USDA published each one. Bids are by region (not by elevator), except sunflowers, which USDA lists by processor town. This app is not affiliated with or endorsed by USDA.</p>
+  <p><b>Source: USDA Agricultural Marketing Service (AMS) Livestock, Poultry &amp; Grain Market News</b> — reports SD 3186, ND 3878, NE 3225, S. MN 3049, IA 2850, sunflowers 2887, at <a href="https://mymarketnews.ams.usda.gov/">mymarketnews.ams.usda.gov</a>. Reports are posted about 2 to 4 pm Central each business day; the “Posted” time is when USDA published each one. Bids are by region (not by elevator), except sunflowers, which USDA lists by processor town. Grain Bids is not affiliated with or endorsed by USDA, CME Group, any state agency, or any company named in the Directory.</p>
   <p><b>About USDA’s numbers:</b> USDA says price reporting is voluntary, reporters may exclude outliers, and basis may be figured from the current or the prior day’s close (paraphrased — see USDA’s report pages for its official wording). Futures settlements, when shown, are copied as printed in those USDA reports; they are not live quotes.</p>
   <p><b>Calculated by this app, not by USDA:</b> the “high end of range” used for ranking, “best”, straight-line distances, map pin positions (region pins are approximate), cents-to-dollars conversion of settlements, the exchange named on each basis (CBOT for corn and soybeans, MGE for spring wheat, KCBT for winter wheat), and changes since the previous report we loaded. Call your elevator to confirm any price. Not trading advice.</p>
+  <p>Directory (names and towns only, not prices; not bids): South Dakota Public Utilities Commission, Grain Warehouses/Grain Buyers list, as of October 23, 2026 (<a href="https://puc.sd.gov/warehouse/">https://puc.sd.gov/warehouse/</a>); North Dakota Department of Agriculture, Grain Storage Warehouse Licenses (<a href="https://lars.ndda.nd.gov/public/allLicenses/4/">https://lars.ndda.nd.gov/public/allLicenses/4/</a>), undated list, fetched October 28, 2026; Nebraska Public Service Commission, Licensed Grain Warehouses (Location Capacity Report), as of October 28, 2026, and Grain Dealer List, as of September 29, 2026 (<a href="https://psc.nebraska.gov/grain">https://psc.nebraska.gov/grain</a>); Iowa Department of Agriculture and Land Stewardship, Licensed Grain Dealers and Licensed Grain Warehouses (<a href="https://iowaagriculture.gov/administrative/licensed-businesses-ag-directories">https://iowaagriculture.gov/administrative/licensed-businesses-ag-directories</a>), undated list, fetched October 28, 2026; Minnesota Department of Agriculture, Licensing Information Search (<a href="https://www2.mda.state.mn.us/webapp/lis/default.jsp">https://www2.mda.state.mn.us/webapp/lis/default.jsp</a>), undated list, fetched October 28, 2026. Compiled from public lists by the app owner. Not reviewed or endorsed by these agencies; may be out of date or incomplete; a license is not a bid or an offer to buy. List dates above, locations approximate.</p>
   <p>Map: base map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>), packaged as a <a href="https://github.com/protomaps/basemaps">Protomaps</a> basemap and, by default, served from this site (the default setup sends no map requests to any other company). Drawn with <a href="vendor/LICENSE-leaflet.txt">Leaflet</a> (BSD-2-Clause) and <a href="vendor/LICENSE-protomaps-leaflet.txt">protomaps-leaflet</a> (BSD-3-Clause); charts by <a href="vendor/LICENSE-chartjs.txt">Chart.js</a> (MIT).</p>
   <p><a href="terms.html">Terms of Use</a> &middot; <a href="privacy.html">Privacy Policy</a></p>
 </footer>
@@ -105,6 +119,7 @@
 <script src="mapmode.js"></script>
 <script src="vendor/chart.umd.js"></script>
 <script src="alerts-core.js"></script>
+<script src="directory.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -1,13 +1,15 @@
 """Draft Terms of Use / Privacy Policy: pages exist and carry the DRAFT notice, required sections and placeholders; the footer links to
 them; build_dist.sh ships them; and what the Privacy Policy says is checked against the code (storage, geolocation, cookies, external requests)."""
-import os, re, shutil, subprocess, unittest
+import html, os, re, shutil, subprocess, unittest
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PUBLIC = ROOT / "public"
 DRAFT = "DRAFT - not legal advice, have a lawyer review"
 # Hosts that may appear as plain links (or, for the OSM tile URL, as the localhost-only dev tile source) in the app's own files.
 LINK_HOSTS = {"mymarketnews.ams.usda.gov", "www.openstreetmap.org", "openstreetmap.org", "opendatacommons.org", "github.com", "leafletjs.com",
-              "operations.osmfoundation.org", "protomaps.com", "www.chartjs.org", "www.w3.org", "docs.github.com", "x.invalid", "example.com"}
+              "operations.osmfoundation.org", "protomaps.com", "www.chartjs.org", "www.w3.org", "docs.github.com", "x.invalid", "example.com",
+              # Directory layer: the state agency lists named in the footer / Terms credits (plain links; nothing is loaded from them)
+              "puc.sd.gov", "lars.ndda.nd.gov", "psc.nebraska.gov", "iowaagriculture.gov", "www2.mda.state.mn.us"}
 DEV_ONLY_TILE_HOST = "tile.openstreetmap.org"      # only in mapmode.js, used only on localhost with MAP_TILES_URL empty
 TRACKERS = ["googleapis.com", "gstatic.com", "google-analytics", "googletagmanager", "doubleclick.net", "facebook.net", "cloudflareinsights", "jsdelivr.net",
             "unpkg.com", "cdnjs.", "bootstrapcdn", "fontawesome", "typekit", "hotjar", "segment.io", "segment.com", "mixpanel", "sentry.io", "plausible.io", "matomo", "fullstory"]
@@ -21,8 +23,8 @@ def app_files(base):                                    # the app's own (non-ven
 
 
 class LegalPages(unittest.TestCase):
-    pages = {"terms.html": ["short", "info-only", "prices", "distance", "futures", "verify", "credits", "warranty", "liability", "law", "contact"],
-             "privacy.html": ["short", "collect", "device", "location", "notifications", "nothird", "host", "sharing", "kids", "changes"]}
+    pages = {"terms.html": ["short", "info-only", "prices", "distance", "futures", "verify", "credits", "warranty", "liability", "law", "directory", "contact"],
+             "privacy.html": ["short", "collect", "device", "location", "notifications", "nothird", "directory", "host", "sharing", "kids", "changes"]}
 
     def test_pages_exist_with_draft_notice_at_top(self):
         for name in self.pages:
@@ -62,7 +64,10 @@ class LegalPages(unittest.TestCase):
             self.assertIn('<a href="mailto:ridgeroduner@gmail.com">ridgeroduner@gmail.com</a>', h)
             self.assertEqual(set(re.findall(r"[A-Za-z0-9._+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}", h)), {"ridgeroduner@gmail.com"}, f"{name}: only the owner-supplied email")
             dates = re.findall(r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, 20\d\d", re.sub(r"<[^>]+>", " ", h))
-            self.assertEqual(dates, ["October 28, 2026"], f"{name}: the only date is the owner-set effective date")
+            self.assertEqual(dates[0], "October 28, 2026", f"{name}: the effective date (owner-set) comes first")
+            # the only other dates are the Directory source-list dates from the reviewer's attribution text (terms section 6), nothing invented
+            self.assertLessEqual(set(dates), {"October 28, 2026", "October 23, 2026", "September 29, 2026"} if name == "terms.html" else {"October 28, 2026"}, f"{name}: {dates}")
+            if name == "privacy.html": self.assertEqual(dates, ["October 28, 2026"])
         # answered by Ridge (via Bobby): governing state and host are now facts, so their placeholders must be gone; lawyer notes and the rest stay
         terms, priv = read(PUBLIC / "terms.html"), read(PUBLIC / "privacy.html")
         for gone in ("[[GOVERNING STATE", "[[HOST", "TBD"):
@@ -73,6 +78,9 @@ class LegalPages(unittest.TestCase):
     def test_owner_email_only_on_legal_pages(self):
         for p in app_files(PUBLIC):
             if p.name in ("terms.html", "privacy.html"): continue
+            if p.name in ("index.html", "directory.js"):          # owner-approved for the Directory "Report a correction" wording only
+                self.assertEqual(set(re.findall(r"[A-Za-z0-9._+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}", read(p))), {"ridgeroduner@gmail.com"}, p.name)
+                self.assertIn("subject=Directory%20correction", read(p)); continue
             self.assertNotIn("ridgeroduner", read(p).lower(), p.name)
 
     def test_only_expected_placeholders_remain(self):
@@ -102,9 +110,70 @@ class LegalPages(unittest.TestCase):
         sw = read(PUBLIC / "sw.js")
         shell = sw.split("const SHELL = [", 1)[1].split("];", 1)[0]
         self.assertIn("'terms.html'", shell); self.assertIn("'privacy.html'", shell)
-        self.assertRegex(sw, r"const VERSION = 'grain-v([7-9]|\d\d)'")          # bumped when the precached legal pages changed (v5 -> v6 -> v7)
+        self.assertRegex(sw, r"const VERSION = 'grain-v(1\d|[2-9]\d)'")      # bumped when precached files changed (v9 -> v10 for the Directory layer)
         for f in re.findall(r"'([^']+)'", shell):                                # every precached file exists (addAll fails the whole install otherwise)
             if f != "./": self.assertTrue((PUBLIC / f).exists(), f)
+
+
+class DirectoryLegalText(unittest.TestCase):
+    """The reviewer's wording (review doc sections 4 and 5) is in the pages, and what the pages promise is true of the code."""
+    @classmethod
+    def setUpClass(cls):
+        cls.terms = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", read(PUBLIC / "terms.html")))).replace("\u2019", "'").replace("\u201c", '"').replace("\u201d", '"')
+        cls.priv = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", read(PUBLIC / "privacy.html")))).replace("\u2019", "'")
+        cls.index = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", read(PUBLIC / "index.html")))).replace("\u2019", "'").replace("\u201c", '"').replace("\u201d", '"')
+
+    def test_terms_edits(self):
+        for w in ["The optional Directory layer lists licensed grain firms from state lists; it contains names and towns only, no prices, and is not a source of any bid in this app.",
+                  "A firm named on the Directory layer near a region's pin is not necessarily part of that region's report.",
+                  "These agencies did not review, verify or endorse this app. Company names belong to their owners and are used only to identify the firm.",
+                  "or pretend it is yours or that USDA, CME Group, a state agency or a listed company runs or endorses it. Please do not use the Directory layer to build mailing, calling or sales lists; the South Dakota Public Utilities Commission says its list \"should not be used for solicitation.\"",
+                  "Directory layer and links to other websites", "A listing is not a bid, an offer to buy, a recommendation, or a statement that the firm is open, buying, or taking part in this app. Licenses can lapse and lists change.",
+                  "we are not responsible for its content, prices, cookies or tracking, and a link does not mean the firm endorses this app or we endorse the firm. To correct or remove a listing, email ridgeroduner@gmail.com.",
+                  "Grain Bids is not affiliated with or endorsed by USDA, CME Group, any state agency, or any company named in the Directory.",
+                  "DRAFT - not legal advice, have a lawyer review"]:
+            self.assertIn(w, self.terms, w)
+        self.assertNotIn("not affiliated with or endorsed by USDA or CME Group.", self.terms.replace("not affiliated with, endorsed by, sponsored by or approved by USDA or CME Group", ""))
+
+    def test_privacy_edits(self):
+        for w in ["Directory links to other websites open only if you tap them; those sites may use cookies and tracking that we do not control.",
+                  "(for example to USDA, OpenStreetMap, state agency lists, and company websites in the Directory) only open if you tap them.",
+                  "We do not control them and do not receive anything from them. We ask your browser not to tell them which page you came from.",
+                  "If you email us (for example to correct a listing), we receive your email address and message, and use them only to reply and fix the listing.",
+                  "The Directory lists businesses from public state lists. Names that look like an individual's personal name are left out. If you are listed and want a correction or removal, email ridgeroduner@gmail.com.",
+                  "Grain Bids is not affiliated with or endorsed by USDA, CME Group, any state agency, or any company named in the Directory.",
+                  "DRAFT - not legal advice, have a lawyer review"]:
+            self.assertIn(w, self.priv, w)
+
+    def test_footer_attribution_in_index_and_terms_is_identical_and_complete(self):
+        for name, txt in (("index", self.index), ("terms", self.terms)):
+            for w in ["South Dakota Public Utilities Commission, Grain Warehouses/Grain Buyers list, as of October 23, 2026 (https://puc.sd.gov/warehouse/)",
+                      "North Dakota Department of Agriculture, Grain Storage Warehouse Licenses (https://lars.ndda.nd.gov/public/allLicenses/4/), undated list, fetched October 28, 2026",
+                      "Nebraska Public Service Commission, Licensed Grain Warehouses (Location Capacity Report), as of October 28, 2026, and Grain Dealer List, as of September 29, 2026 (https://psc.nebraska.gov/grain)",
+                      "Iowa Department of Agriculture and Land Stewardship, Licensed Grain Dealers and Licensed Grain Warehouses (https://iowaagriculture.gov/administrative/licensed-businesses-ag-directories), undated list, fetched October 28, 2026",
+                      "Minnesota Department of Agriculture, Licensing Information Search (https://www2.mda.state.mn.us/webapp/lis/default.jsp), undated list, fetched October 28, 2026",
+                      "Compiled from public lists by the app owner. Not reviewed or endorsed by these agencies; may be out of date or incomplete; a license is not a bid or an offer to buy. List dates above, locations approximate."]:
+                self.assertIn(w, txt, f"{name}: {w[:60]}")
+        self.assertIn("Directory (names and towns only, not prices; not bids): South Dakota", self.index)
+        self.assertNotIn("[date]", self.index); self.assertNotIn("[date]", self.terms)
+
+    def test_layer_labels_and_notices_on_the_page(self):
+        for w in ["Directory only, NOT bids", "Licensed grain buyers and warehouses from state lists. Names and towns only. No prices.",
+                  "For farmers' information only. Do not use this directory to build mailing, calling or sales lists. South Dakota's Public Utilities Commission says its list \"should not be used for solicitation.\"",
+                  "Wrong name, wrong town, closed, or a firm that wants to be corrected or removed? Email ridgeroduner@gmail.com with the firm name and town. Please don't send personal details.",
+                  "Call your elevator to confirm.", "not offers from any elevator"]:
+            self.assertIn(w, self.index, w)
+
+    def test_promises_match_code(self):
+        sw = read(PUBLIC / "sw.js"); d = read(PUBLIC / "directory.js")
+        self.assertIn("'directory.js'", sw.split("const SHELL = [", 1)[1].split("];", 1)[0])
+        # directory.json is fetched only when the layer is turned on, and the service worker's data path (network-first, saved copy) caches it
+        self.assertEqual(re.findall(r"fetch\(([^)]*)\)", d), ["'data/directory.json'"])
+        self.assertIn("cacheable(r)", sw); self.assertNotIn("directory.json", sw)                  # not precached: only cached once used
+        # "We ask your browser not to tell them which page you came from": site-wide meta referrer + per-link referrerpolicy
+        for n in ("index.html", "terms.html", "privacy.html"): self.assertIn('<meta name="referrer" content="no-referrer">', read(PUBLIC / n), n)
+        self.assertIn('rel="noopener noreferrer" referrerpolicy="no-referrer"', d)
+        self.assertNotIn("localStorage", d); self.assertNotIn("document.cookie", d)
 
 
 class BuiltOutput(unittest.TestCase):
@@ -153,7 +222,7 @@ class BuiltOutput(unittest.TestCase):
 
     def test_code_matches_privacy_policy(self):
         app = read(PUBLIC / "app.js"); core = read(PUBLIC / "alerts-core.js"); sw = read(PUBLIC / "sw.js")
-        everything = app + core + sw + read(PUBLIC / "mapmode.js") + read(PUBLIC / "index.html")
+        everything = app + core + sw + read(PUBLIC / "mapmode.js") + read(PUBLIC / "index.html") + read(PUBLIC / "directory.js")
         # cookies: never read or written
         self.assertNotIn("document.cookie", everything); self.assertNotIn("cookieStore", everything)
         # storage: exactly the two localStorage keys the policy describes; IndexedDB 'grain-app' copy for the worker; no sessionStorage

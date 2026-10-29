@@ -64,3 +64,17 @@ main.legal h3{font-size:18px;margin:22px 0 6px}
 main.legal ul{padding-left:22px}main.legal li{margin:4px 0}
 .legalpage footer{max-width:760px;margin:0 auto}
 .legalpage a:focus-visible{outline:3px solid #0645ad;outline-offset:2px}
+/* Directory layer (grey diamonds, separate from the bid pins) */
+.dirpanel{margin:6px 0 4px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#f1f2ee}
+.dirpanel p{margin:2px 0}
+.dirtoggle label{cursor:pointer}
+.dir-icon{background:none;border:0}
+.dir-shape{display:block;width:12px;height:12px;margin:2px;transform:rotate(45deg);background:#8b9097;border:1.5px solid #fff;box-shadow:0 0 0 1px #5d6269;box-sizing:border-box}
+.dir-cluster{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin:2px;border-radius:6px;background:#8b9097;border:2px solid #fff;box-shadow:0 0 0 1px #5d6269;box-sizing:border-box;color:#111;font:700 12px/1 system-ui,sans-serif;cursor:pointer}
+.dir-icon:focus-visible .dir-cluster{outline:3px solid #0645ad;outline-offset:2px}
+.dir-icon:focus-visible{outline:none}.dir-icon:focus-visible .dir-shape{outline:3px solid #0645ad;outline-offset:2px}
+.dir-key-n{display:inline-block;min-width:16px;padding:0 3px;border-radius:4px;background:#8b9097;border:1.5px solid #fff;box-shadow:0 0 0 1px #5d6269;box-sizing:border-box;font-size:11px;font-weight:700;color:#111;text-align:center;margin:0 6px 0 3px}
+.dir-key{display:inline-block;width:10px;height:10px;transform:rotate(45deg);background:#8b9097;border:1.5px solid #fff;box-shadow:0 0 0 1px #5d6269;box-sizing:border-box;vertical-align:middle;margin:0 6px 0 3px}
+.dirpopup .dirpop p{margin:4px 0}.dirpopup .dirpop-ext{font-size:12px;color:var(--mut)}.dirpopup a:focus-visible{outline:2px solid #0645ad}
+.dirtable{max-height:260px;overflow:auto}.dirtable td,.dirtable th{text-align:left;padding:3px 6px}
+button.linklike{background:none;border:0;color:#0645ad;text-decoration:underline;padding:0;font:inherit}

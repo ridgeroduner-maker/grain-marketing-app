@@ -214,6 +214,7 @@ async function leafletView(choice, onFail) {
     .bindTooltip('About 300 miles, straight-line, from Gann Valley (approximate for region bids)', { sticky: true });
   L.marker([CENTER.lat, CENTER.lon]).addTo(map).bindPopup('Gann Valley, SD (center of the 300-mile ring)');
   const pins = L.layerGroup().addTo(map);
+  if (window.GrainDirectory) GrainDirectory.attach(map);          // optional Directory layer: separate file, separate toggle, never part of bids
   return {
     kind: 'leaflet',
     setPins(items) {
@@ -227,7 +228,7 @@ async function leafletView(choice, onFail) {
     focus(r) { map.setView([r.lat, r.lon], 8); r._pin && r._pin.openPopup(); },
     showMe(p) { L.circleMarker([p.lat, p.lon], { radius: 6, color: '#0645ad', fillColor: '#3b82f6', fillOpacity: 1 }).addTo(map).bindPopup('You'); },
     resize() { map.invalidateSize(); },
-    destroy() { map.remove(); },
+    destroy() { if (window.GrainDirectory) GrainDirectory.detach(); map.remove(); },
   };
 }
 function popupHtml(r) {

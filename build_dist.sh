@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Build the deployable static folder ./dist from ./public. Local only - uploads nothing.
+# Validates the COMMITTED public/data/directory.json (python3 -m ingest.build_directory --check). It never reads the source CSV (not in git; README "Directory layer").
 # Includes the DRAFT legal pages terms.html and privacy.html (the build fails if they are missing).
 # EXCLUDES public/data-sample/ (synthetic demo prices) and *.test.js so they can never ship; adds .nojekyll. Optional: MAP_TILES_KEY (env or .env), only for a keyed raster
 # tile provider, is written into dist/config.js (never into public/ or git). The self-hosted map file public/tiles/plains.pmtiles
@@ -7,6 +8,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 [ -f .env ] && set -a && . ./.env && set +a
+# Directory layer data: the committed public/data/directory.json (names and towns only). Validated here (schema, count > 0, no notes/licence fields); to refresh it run the
+# separate local command in README "Directory layer" (python3 -m ingest.build_directory --csv <path>). No CSV is needed here or in CI.
+python3 -m ingest.build_directory --check || { echo "ERROR: public/data/directory.json is missing or invalid (see README \"Directory layer\")"; exit 1; }
 rm -rf dist && mkdir dist
 cp -r public/. dist/
 rm -rf dist/data-sample
@@ -26,7 +30,7 @@ if [ -f dist/tiles/plains.pmtiles ]; then
 else
   echo "NOTE: tiles/plains.pmtiles is not built, so the map will show pins on a plain background with a notice. Run ./build_tiles.sh first (README \"Map\")."
 fi
-for f in terms.html privacy.html; do [ -f "dist/$f" ] || { echo "ERROR: $f missing from dist"; exit 1; }; done   # legal pages must ship (footer links to them)
+for f in terms.html privacy.html data/directory.json; do [ -f "dist/$f" ] || { echo "ERROR: $f missing from dist"; exit 1; }; done   # legal pages must ship (footer links to them)
 ! find dist -name '*.test.js' | grep -q . || { echo "ERROR: a *.test.js file leaked into dist"; exit 1; }
 [ -f dist/.nojekyll ] || { echo "ERROR: .nojekyll missing from dist"; exit 1; }
 ! find dist -path '*data-sample*' | grep -q . || { echo "ERROR: data-sample leaked into dist"; exit 1; }

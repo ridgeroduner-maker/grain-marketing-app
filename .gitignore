@@ -6,3 +6,5 @@ public/data-sample/
 dist/
 public/tiles/*.pmtiles
 tools/
+data/source/
+data/elevator-directory*.csv

@@ -1,7 +1,7 @@
 /* Service worker: offline app shell + network-first data. No server push (see README). */
 importScripts('alerts-core.js');
-const VERSION = 'grain-v9';
-const SHELL = ['./', 'index.html', 'config.js', 'mapmode.js', 'app.js', 'alerts-core.js', 'style.css', 'manifest.webmanifest', 'terms.html', 'privacy.html',
+const VERSION = 'grain-v11';
+const SHELL = ['./', 'index.html', 'config.js', 'mapmode.js', 'app.js', 'alerts-core.js', 'directory.js', 'style.css', 'manifest.webmanifest', 'terms.html', 'privacy.html',
   'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/chart.umd.js', 'vendor/protomaps-leaflet.js',
   'vendor/images/marker-icon.png', 'vendor/images/marker-icon-2x.png', 'vendor/images/marker-shadow.png',
   'vendor/images/layers.png', 'vendor/images/layers-2x.png',
