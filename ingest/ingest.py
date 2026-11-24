@@ -63,11 +63,18 @@ def store_skipped(con, skipped):
         print(f"  SKIPPED ({reason}): {b['source_report']} {b['commodity']} {b['section']} {b['bid_low']}-{b['bid_high']} {b['unit']} [{b.get('heading')}]")
     return len(skipped)
 
-def run(source, date_iso, backfill_days, export, accept_row_drop=False):
+def run(source, date_iso, backfill_days, export, accept_row_drop=False, allow_partial=False):
+    """Returns the number of failures (0 = all reports parsed and, with export, exported). See run_detailed()."""
+    return run_detailed(source, date_iso, backfill_days, export, accept_row_drop, allow_partial)["failures"]
+
+def run_detailed(source, date_iso, backfill_days, export, accept_row_drop=False, allow_partial=False):
+    """allow_partial: when SOME (not all) reports fail, still export the good ones and list the failed ones as unavailable
+    (their rows are left out of latest.json). Default False = the original all-or-nothing fail-safe.
+    Returns {"failures": n, "exported": bool, "unavailable": {"AMS_slug": reason}}."""
     con = db.connect()
     started = export_json.now_central().isoformat()
     use_mars = source == "mars" or (source == "auto" and bool(__import__("os").environ.get(config.API_KEY_ENV)))
-    summary, failures = [], 0
+    summary, failures, unavailable = [], 0, {}
     if use_mars:
         mars_api._key()   # fail fast with NoApiKey instead of once per report
     for rep in config.REPORTS:
@@ -106,25 +113,39 @@ def run(source, date_iso, backfill_days, export, accept_row_drop=False):
             print(line); summary.append(line)
         except Exception as e:
             failures += 1
+            unavailable[f"AMS_{slug}"] = str(e)[:300]
             traceback.print_exc()
             summary.append(f"AMS_{slug} FAILED: {e}")
             print(f"AMS_{slug} FAILED: {e}", file=sys.stderr)       # one line per failed report (quoted in the refresh-failure issue)
+    partial = bool(export and allow_partial and failures and failures < len(config.REPORTS))
+    # A partial export still updates the data (the good reports), so it counts as a data update for "last successful update";
+    # the run itself still fails visibly (exit code 3 below; the workflow turns that into a failed check and an alert).
     con.execute("INSERT INTO ingest_runs(started_at,finished_at,source,summary,ok) VALUES (?,?,?,?,?)",
                 (started, export_json.now_central().isoformat(), "mars" if use_mars else "pdf",
-                 "\n".join(summary), 0 if failures else 1))
+                 "\n".join(summary), 0 if (failures and not partial) else 1))
     con.commit()
-    if export and failures:
-        print(f"NOT EXPORTING: {failures} report(s) failed to parse; public/data/ left as it was "
+    exported = False
+    if export and failures and not partial:
+        why = "all reports failed" if failures >= len(config.REPORTS) else f"{failures} report(s) failed to parse"
+        print(f"NOT EXPORTING: {why}; public/data/ left as it was "
               "(the app will show its age). Fix the parser/report and re-run.", file=sys.stderr)
     elif export:
+        if partial:
+            print(f"PARTIAL EXPORT: publishing the reports that parsed; unavailable: {', '.join(sorted(unavailable))}", file=sys.stderr)
         try:
-            export_json.export(con, config.ROOT / "public" / "data", sample=False, accept_row_drop=accept_row_drop)
+            export_json.export(con, config.ROOT / "public" / "data", sample=False, accept_row_drop=accept_row_drop,
+                               unavailable=unavailable if partial else None)
+            exported = True
         except export_json.ExportGuardError as e:
             print(f"NOT EXPORTING: {e}", file=sys.stderr)
             con.execute("UPDATE ingest_runs SET ok=0 WHERE id=(SELECT MAX(id) FROM ingest_runs)")
             con.commit()
             failures += 1
-    return failures
+    return {"failures": failures, "exported": exported, "unavailable": unavailable if (partial and exported) else {}}
+
+# Exit codes: 0 = everything parsed (and exported); 1 = nothing exported (fail-safe: the old data stays); 2 = no API key;
+# 3 = PARTIAL: the good reports were exported but at least one report failed (only with --allow-partial).
+EXIT_PARTIAL = 3
 
 def main():
     ap = argparse.ArgumentParser()
@@ -133,12 +154,15 @@ def main():
     ap.add_argument("--backfill-days", type=int, default=0, help="mars only")
     ap.add_argument("--export", action="store_true")
     ap.add_argument("--accept-row-drop", action="store_true", help="export even if the row count fell sharply vs the last good export")
+    ap.add_argument("--allow-partial", action="store_true",
+                    help="with --export: if some (not all) reports fail, still export the others, mark the failed ones unavailable, exit 3")
     a = ap.parse_args()
     try:
-        rc = run(a.source, a.date, a.backfill_days, a.export, a.accept_row_drop)
+        res = run_detailed(a.source, a.date, a.backfill_days, a.export, a.accept_row_drop, a.allow_partial)
+        code = 0 if not res["failures"] else (EXIT_PARTIAL if res["unavailable"] else 1)
     except mars_api.NoApiKey as e:
-        print(f"ERROR: {e}. Use --source pdf or set the key (see README).", file=sys.stderr); rc = 2
-    sys.exit(1 if rc else 0)
+        print(f"ERROR: {e}. Use --source pdf or set the key (see README).", file=sys.stderr); code = 2
+    sys.exit(code)
 
 if __name__ == "__main__":
     main()

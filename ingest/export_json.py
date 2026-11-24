@@ -68,14 +68,14 @@ def business_days_between(d0, d1):
             n += 1
     return n
 
-def _outside(cur, today):
+def _outside(cur, today, unavailable=()):
     """Bids whose (approximate) location is beyond the radius but within the margin: newest edition per report only."""
     out = []
     for r in cur.execute("""SELECT o.* FROM outside_bids o WHERE o.report_date=(SELECT MAX(x.report_date) FROM outside_bids x WHERE x.source_report=o.source_report)
                             AND o.report_date=(SELECT MAX(b.report_date) FROM bids b WHERE b.source_report=o.source_report)
                             ORDER BY o.distance_mi"""):
         age = (today - datetime.date.fromisoformat(r["report_date"])).days
-        if age > config.STALE_EXPIRE_DAYS:
+        if age > config.STALE_EXPIRE_DAYS or r["source_report"] in unavailable:
             continue
         out.append({"commodity": r["commodity"], "variant": variant_of(r["commodity"], r["grade"], r["protein"], r["freight"]),
                     "location": label_of(r["state"], r["location"], r["section"]), "grade": r["grade"], "protein": r["protein"],
@@ -86,8 +86,12 @@ def _outside(cur, today):
                     "precision": "town" if r["geo_method"] == "gazetteer_town" else "region", "approximate": r["geo_method"] != "gazetteer_town"})
     return out
 
-def export(con, outdir, sample=False, today=None, accept_row_drop=False):
-    """today: datetime.date used for staleness (defaults to the real date; sample data uses its own newest date)."""
+def export(con, outdir, sample=False, today=None, accept_row_drop=False, unavailable=None):
+    """today: datetime.date used for staleness (defaults to the real date; sample data uses its own newest date).
+    unavailable: {"AMS_slug": reason} for reports that failed in this run (partial publish). Their rows are left out of latest.json and
+    outside.json (no old price is shown as if current), they are listed in meta.unavailable_reports, and the row-count guard compares only
+    against the reports that did come in."""
+    unavailable = dict(unavailable or {})
     outdir.mkdir(parents=True, exist_ok=True)
     cur = con.cursor()
     rows = cur.execute("""SELECT b.*, l.state, l.name, l.section, l.lat, l.lon, l.geo_method, l.distance_mi
@@ -110,6 +114,9 @@ def export(con, outdir, sample=False, today=None, accept_row_drop=False):
         last = lst[-1]
         prev = lst[-2] if len(lst) > 1 else None
         age = (today - datetime.date.fromisoformat(last["report_date"])).days
+        if last["source_report"] in unavailable:
+            dropped.append(f'{last["source_report"]} {last["name"]} {last["commodity"]} (report unavailable in this update)')
+            continue
         if last["report_date"] < newest[last["source_report"]]:
             dropped.append(f'{last["source_report"]} {last["name"]} {last["commodity"]} (last {last["report_date"]})')
             continue
@@ -147,7 +154,8 @@ def export(con, outdir, sample=False, today=None, accept_row_drop=False):
     prev_file = outdir / "latest.json"
     if not sample and not accept_row_drop and prev_file.exists():
         try:
-            prev_n = len(json.loads(prev_file.read_text()))
+            prev_rows = json.loads(prev_file.read_text())
+            prev_n = sum(1 for r in prev_rows if not (isinstance(r, dict) and r.get("source_report") in unavailable))
         except ValueError:
             prev_n = 0
         if prev_n and len(latest_rows) < config.MIN_ROW_RATIO * prev_n:
@@ -169,7 +177,7 @@ def export(con, outdir, sample=False, today=None, accept_row_drop=False):
            ORDER BY source_report""")] if not sample else []
     for x in skipped:
         x["variant"] = variant_of(x["commodity"], x.pop("grade"), x.pop("protein"), x.pop("freight"))
-    outside = [] if sample else _outside(cur, today)
+    outside = [] if sample else _outside(cur, today, unavailable)
     ok_run = None if sample else cur.execute("SELECT finished_at FROM ingest_runs WHERE ok=1 ORDER BY id DESC LIMIT 1").fetchone()
     meta = {
         "sample": bool(sample), "generated_at": now_central().isoformat(),
@@ -183,7 +191,10 @@ def export(con, outdir, sample=False, today=None, accept_row_drop=False):
         "reports": sorted(newest),
         "report_times": {r["source_report"]: {"report_date": r["report_date"], "posted_at": r["posted_at"], "status": r["report_status"],
                                               "label": _label_for(r["source_report"])}
-                         for r in rows if r["report_date"] == newest[r["source_report"]]},
+                         for r in rows if r["report_date"] == newest[r["source_report"]] and r["source_report"] not in unavailable},
+        # Reports that failed in this update (partial publish): shown as "unavailable", none of their bids are in latest.json.
+        "unavailable_reports": [{"source_report": k, "label": _label_for(k), "reason": v[:300],
+                                 "last_report_date": newest.get(k)} for k, v in sorted(unavailable.items())],
         "dropped_rows": dropped,
         "skipped_rows": skipped,
         "center_name": "Gann Valley, SD",
