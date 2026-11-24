@@ -42,6 +42,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    outputs:
+      ingest_failed: ${{ steps.ingest.outputs.failed }}
     steps:
       # Actions are pinned to full commit SHAs (the tag is in the comment). Versions checked 2026-10-28 on each action's releases page.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -91,13 +93,25 @@ jobs:
 
       # FAIL-SAFE: ingest exits non-zero if ANY report fails to fetch/parse or the row-count guard trips; export then does not run, this
       # step fails, the deploy job never starts, and the previously published site (and its data) stays exactly as it was.
+      # The step still fails exactly as before; it only also saves the "AMS_xxxx FAILED" / "NOT EXPORTING" lines as a job output so the
+      # refresh-alert job below can quote them in the GitHub issue.
       - name: Ingest USDA reports and export the data
+        id: ingest
         env:
           ACCEPT_DROP: ${{ inputs.accept_row_drop }}
         run: |
           args=(--source pdf --export)
           if [ "$ACCEPT_DROP" = "true" ]; then args+=(--accept-row-drop); fi
-          python3 -m ingest.ingest "${args[@]}"
+          set +e
+          python3 -m ingest.ingest "${args[@]}" 2>&1 | tee "$RUNNER_TEMP/ingest.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "failed<<INGEST_FAILED_EOF"
+            grep -E '^(AMS_[0-9]+ FAILED|NOT EXPORTING)' "$RUNNER_TEMP/ingest.log" | cut -c1-300 | head -n 20 || true
+            echo "INGEST_FAILED_EOF"
+          } >> "$GITHUB_OUTPUT"
+          exit "$rc"
 
       - name: Check the exported data (rows, dates, shape)
         run: python3 deploy/ci_check.py data
@@ -146,3 +160,35 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1
+
+  # Tells the owner when the refresh breaks (audit 2026-11-10, F-05): on a failed build or deploy on main it opens ONE issue labelled
+  # refresh-failure (or comments on the one already open); on the next fully successful run it closes it. GitHub emails the repo owner
+  # about new issues by default. It runs AFTER build and deploy and cannot change what they did, so the fail-safe is untouched: a failed
+  # build still deploys nothing and the last published site stays up. This is the only job with a write permission besides Pages, and it
+  # is issues only, through the built-in token (no stored secret).
+  refresh-alert:
+    needs: [build, deploy]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read            # checkout of deploy/refresh_alert.sh
+      issues: write             # open, comment on, label and close the refresh-failure issue
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: deploy/refresh_alert.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Open, update or close the refresh-failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          INGEST_FAILED: ${{ needs.build.outputs.ingest_failed }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: bash deploy/refresh_alert.sh
+
