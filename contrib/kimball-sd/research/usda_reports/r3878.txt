@@ -1,0 +1,78 @@
+                      North Dakota Daily Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      ND Dept. of Ag Market News                                                                                                                       October 26, 2026
+Email us with accessibility issues with this report.
+
+Grain Report for 10/26/2026 - Final
+
+Futures Settlements
+     Exchange               Commodity                                                     Closing Settlement Prices (¢/bu) as of 10/26/2026
+       CBOT                    Corn             455.00 (Dec 26)   468.75 (Mar 27)      477.50 (May 27)     484.00 (Jul 27)     480.25 (Sep 27)    494.00 (Dec 27)    507.75 (Mar 28)
+       CBOT                  Soybeans          1241.25 (Nov 26)   1252.50 (Jan 27)     1261.00 (Mar 27) 1270.00 (May 27) 1276.50 (Jul 27)        1261.50 (Aug 27)    1230.50 (Sep 27)
+       CBOT                   Wheat             616.00 (Dec 26)   629.75 (Mar 27)      636.50 (May 27)     640.00 (Jul 27)     649.00 (Sep 27)    662.75 (Dec 27)    673.00 (Mar 28)
+       CBOT                 White Oats          360.50 (Dec 26)   371.25 (Mar 27)      375.50 (May 27)     373.25 (Jul 27)     367.50 (Sep 27)    376.00 (Dec 27)    379.50 (Mar 28)
+       KCBT                   Wheat             659.00 (Dec 26)   668.75 (Mar 27)      672.75 (May 27)     674.50 (Jul 27)     683.00 (Sep 27)    695.50 (Dec 27)    703.00 (Mar 28)
+        MGE                   Wheat             634.00 (Dec 26)   651.25 (Mar 27)      663.75 (May 27)     675.50 (Jul 27)     684.25 (Sep 27)    700.75 (Dec 27)
+
+Coarse
+                                                                                     US #2 Yellow Corn (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)       Basis Change             Price($/Bu)          Price Change         Average Year Ago     Freight       Delivery
+    Northwest            Bid                 -90.00Z             UNCH                    3.6500              DN 0.0100           3.6500 3.5875        FOB-T         Current
+  North Central          Bid           -100.00Z to -75.00Z   UNCH-DN 10.00           3.5500-3.8000      DN 0.0100-DN 0.1100      3.6750 3.5875        FOB-T         Current
+    Northeast            Bid           -110.00Z to -90.00Z       UNCH                3.4500-3.6500           DN 0.0100           3.5625 3.5325        FOB-T         Current
+     Central             Bid            -90.00Z to -80.00Z       UNCH                3.6500-3.7500           DN 0.0100           3.7000 3.6875        FOB-T         Current
+   East Central          Bid            -85.00Z to -75.00Z   UNCH-DN 5.00            3.7000-3.8000      DN 0.0100-DN 0.0600      3.7643 3.6675        FOB-T         Current
+
+                                                                                     US #2 Soybeans (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)       Basis Change          Price($/Bu)             Price Change         Average Year Ago     Freight       Delivery
+    Northwest            Bid                 -90.00X              UNCH               11.5125                 DN 0.1525           11.5125 9.2225       FOB-T         Current
+  North Central          Bid            -90.00X to -85.00X        UNCH           11.5125-11.5625             DN 0.1525           11.5292 9.1892       FOB-T         Current
+    Northeast            Bid           -105.00X to -85.00X        UNCH           11.3625-11.5625             DN 0.1525           11.4750 9.3175       FOB-T         Current
+     Central             Bid            -85.00X to -75.00X        UNCH           11.5625-11.6625             DN 0.1525           11.5958 9.3892       FOB-T         Current
+   East Central          Bid            -85.00X to -75.00X    UP 5.00-UNCH       11.5625-11.6625        DN 0.1025-DN 0.1525      11.6250 9.4425       FOB-T         Current
+
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                                          Page 1 of 2
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/3878
+                      North Dakota Daily Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      ND Dept. of Ag Market News                                                                                                          October 26, 2026
+Email us with accessibility issues with this report.
+                                                                          US #1 Milling Hard Red Spring Wheat (Bulk)
+Country Elevators - Conventional
+ Region/Location Sale Type Protein                Basis (¢/Bu)        Basis Change         Price($/Bu)       Price Change   Average Year Ago   Freight   Delivery
+    Northwest           Bid      14.0%              -85.00Z              UNCH                5.4900           DN 0.0750     5.4900 5.0525      FOB-T     Current
+  North Central         Bid      14.0%         -85.00Z to -65.00Z        UNCH            5.4900-5.6900        DN 0.0750     5.5400 5.0150      FOB-T     Current
+    Northeast           Bid      14.0%              -50.00Z              UNCH                5.8400           DN 0.0750     5.8400 5.0775      FOB-T     Current
+     Central            Bid      14.0%         -85.00Z to -55.00Z        UNCH            5.4900-5.7900        DN 0.0750     5.6733 4.9358      FOB-T     Current
+   East Central         Bid      14.0%         -65.00Z to -45.00Z        UNCH            5.6900-5.8900        DN 0.0750     5.7686 5.0275      FOB-T     Current
+
+
+
+
+Explanatory Notes:
+Price & Basis Values quoted are for Current Delivery, unless otherwise noted.
+
+CBOT/KCBT/MGE Trade month symbols: F January; G February; H March; J April; K May; M June; N July; Q August; U September; V October; X November; Z December.
+
+Freight Codes:
+FOB: Freight On Board
+DLVD: Delivered
+CIF: Cost, Insurance, and Freight
+T: Truck, R: Rail, B: Barge, T/R: Truck/Rail, R/B: Rail/Barge, T/R/B: Truck/Rail/Barge, OV: Ocean Vessel
+
+Trade Regions / Misc Info:
+For more information, click here
+
+
+
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                             Page 2 of 2
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/3878
+

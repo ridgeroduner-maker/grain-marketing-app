@@ -1,0 +1,9 @@
+# Grain buyers within 300 mi of Kimball, SD (as of Oct 27, 2026)
+- Total: 870 locations (869 that post bids publicly, plus Liberty Grain in Kimball, which has no bid page found). By state: IA 247, NE 244, MN 135, SD 115, KS 71, ND 49, CO 8. Within 150 mi: 155.
+- How bids are published: Barchart/AgriCharts widget 485; Bushel 70; Stonehedge 58; DTN 50; Gradable 39; vendor or co-op portals (NEW Coop, Landus, Heartland, CPI and others) about 167.
+- Source of the list: the public GitHub repo https://github.com/dnilgis/bids, which drives agsist.com. Each row cites its file there. The repo has no LICENSE file, so use it as a research index only and confirm against each elevator's own page.
+- USDA AMS MyMarketNews is free and public domain. SD daily bids are AMS_3186 (https://mymarketnews.ams.usda.gov/viewReport/3186), ND is AMS_3878, sunflower/canola/millet/flax is AMS_2887, and the state list is at https://www.ams.usda.gov/market-news/state-grain-reports. MARS API: https://marsapi.ams.usda.gov/services/v1.2/reports, with a free account key. Prices are regional ranges, not per elevator.
+- Barchart terms (https://shared.websol.barchart.com/privacy.php) ban redistribution, public display and data mining. getGrainBids is a paid API. DTN cash bids need a DTN account, siteId and API key (https://cp-docs.dtn.com/apis/markets-api).
+- Gaps: only 5 boards list sunflowers and 16 list oats. Phone-only elevators are missing. Wheat class tags come from text matches. Free futures redistribution was not verified.
+- Recommendation: use USDA AMS for prices, and link to each elevator's own bid page instead of copying its numbers.
+- Update 2026-11-24: 29 Iowa rows the repo owner asked to keep out of the public repo were removed from both elevator lists. Another elevator the owner also asked to keep out was not in these files.
