@@ -73,10 +73,11 @@ def _range(s):
 def parse_report(text, slug, title, state):
     """Return dict(report_date, bids=[...], futures=[...], skipped=[...])."""
     out = {"report_date": None, "bids": [], "futures": [], "skipped": []}
-    m = re.search(r"Grain Report for (\d\d)/(\d\d)/(\d{4})", text)
+    # USDA sometimes drops leading zeros (e.g. "11/2/2026"), so accept 1-2 digits.
+    m = re.search(r"Grain Report for (\d{1,2})/(\d{1,2})/(\d{4})", text)
     if not m:
         raise ValueError(f"report {slug}: no 'Grain Report for MM/DD/YYYY' line")
-    out["report_date"] = f"{m.group(3)}-{m.group(1)}-{m.group(2)}"
+    out["report_date"] = f"{m.group(3)}-{int(m.group(1)):02d}-{int(m.group(2)):02d}"
     status = "Final" if re.search(r"Grain Report for \S+ - Final", text) else "Preliminary"
     out["status"] = status
 
