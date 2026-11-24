@@ -32,6 +32,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install pdftotext (poppler-utils; the parser tests read the saved USDA PDFs)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+
       - name: Python tests (unittest)
         run: python3 -m unittest discover -s ingest/tests
 
