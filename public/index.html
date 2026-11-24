@@ -5,7 +5,7 @@
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Grain Bids near Gann Valley, SD</title>
-<meta name="theme-color" content="#2f5d1f">
+<meta name="theme-color" content="#2a541c">
 <meta name="description" content="USDA AMS regional cash grain bids within about 300 miles of Gann Valley, SD (posted about 2 to 4 pm Central each business day).">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -14,30 +14,68 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<a class="skip" href="#tab-best">Skip to today's prices</a>
 <header>
-  <div class="brand"><img src="icons/icon.svg" alt="" width="28" height="28"> <h1>Grain Bids <small>300 mi of Gann Valley, SD</small></h1></div>
-  <div class="hdr-right"><span id="asof" class="asof"></span> <button id="installBtn" hidden>Install app</button></div>
+  <div class="brand"><img src="icons/icon.svg" alt="" width="36" height="36"> <h1>Grain Bids <small>Prices near Gann Valley, SD</small></h1></div>
+  <div class="hdr-right"><span id="asof" class="asof"></span> <button id="installBtn" type="button" hidden>Add to my phone</button></div>
 </header>
-<div id="sampleBanner" class="banner sample" hidden>SAMPLE DATA — synthetic prices for demo only. <a href="?">Switch to real data</a></div>
+
+<section class="welcome" aria-label="Welcome">
+  <p class="welcome-lead">This app shows today's USDA grain prices within about 300 miles of Gann Valley, South Dakota.</p>
+  <p class="welcome-actions"><button type="button" class="primary" id="btnSeePrices">See today's prices near me</button></p>
+</section>
+
+<div id="sampleBanner" class="banner sample" hidden>SAMPLE DATA — made-up prices for a demo only. <a href="?">Switch to real data</a></div>
 <div id="noteBanner" class="banner info" hidden></div>
 <div id="statusBanner" class="banner status ok" role="status">Loading data status…</div>
 <div class="banner confirm" role="note"><b>Call your elevator to confirm.</b> These are USDA <i>regional</i> bid reports, posted about 2 to 4 pm Central each business day — not offers from any elevator, and not real-time. Each bid shows when USDA posted it.</div>
 
-<section class="controls">
-  <label>Commodity <select id="selCommodity"></select></label>
-  <label>Product (grade · freight) <select id="selVariant"></select></label>
-  <label>Delivery <select id="selDelivery"></select></label>
-</section>
-
-<nav class="tabs" role="tablist" aria-label="Sections">
-  <button role="tab" id="t-map" data-tab="map" aria-controls="tab-map" aria-selected="true" tabindex="0">Map</button>
-  <button role="tab" id="t-best" data-tab="best" aria-controls="tab-best" aria-selected="false" tabindex="-1">Best bid near me</button>
-  <button role="tab" id="t-alerts" data-tab="alerts" aria-controls="tab-alerts" aria-selected="false" tabindex="-1">Alerts</button>
-  <button role="tab" id="t-history" data-tab="history" aria-controls="tab-history" aria-selected="false" tabindex="-1">History</button>
+<nav class="tabs" role="tablist" aria-label="App sections">
+  <button type="button" role="tab" id="t-best" data-tab="best" aria-controls="tab-best" aria-selected="true" tabindex="0">Today's prices</button>
+  <button type="button" role="tab" id="t-map" data-tab="map" aria-controls="tab-map" aria-selected="false" tabindex="-1">Map</button>
+  <button type="button" role="tab" id="t-alerts" data-tab="alerts" aria-controls="tab-alerts" aria-selected="false" tabindex="-1">Price alerts</button>
+  <button type="button" role="tab" id="t-history" data-tab="history" aria-controls="tab-history" aria-selected="false" tabindex="-1">Price history</button>
 </nav>
 
+<section class="controls">
+  <label>Crop <span class="hint">What you are selling</span>
+    <select id="selCommodity"></select>
+  </label>
+  <label>When <span class="hint">Now or later</span>
+    <select id="selDelivery"></select>
+  </label>
+  <label>Grade and haul <span class="hint">Quality, and who hauls it</span>
+    <select id="selVariant"></select>
+  </label>
+</section>
+<details class="helpwords">
+  <summary>What do these words mean?</summary>
+  <dl>
+    <dt>Cash bid</dt>
+    <dd>The price a buyer is posting for grain. In this app, that number comes from a USDA regional report, not a quote from one elevator. Always call to confirm.</dd>
+    <dt>Grade and haul</dt>
+    <dd>Grade is the quality of the grain (for example US #2 Yellow corn). Haul, sometimes called freight, is who trucks it: <b>Delivered</b> means the posted price is for grain brought to the buyer; <b>FOB</b> means you haul it yourself.</dd>
+    <dt>Basis</dt>
+    <dd>How far the cash price is above or below the futures market, in cents. A basis of −40¢ means the cash price is 40 cents under the futures price named in the report.</dd>
+    <dt>When / delivery</dt>
+    <dd><b>Current</b> means you can deliver now. Other choices are later delivery periods printed in the USDA report.</dd>
+    <dt>Miles</dt>
+    <dd>Straight-line miles (as the crow flies) from you, or from Gann Valley if you have not shared your location. This is not driving distance.</dd>
+  </dl>
+</details>
+
+
 <main>
-  <section id="tab-map" class="tab active" role="tabpanel" aria-labelledby="t-map" tabindex="0">
+  <section id="tab-best" class="tab active" role="tabpanel" aria-labelledby="t-best" tabindex="0">
+    <h2 class="visually-hidden">Today's prices near me</h2>
+    <p class="locate-row"><button id="btnLocate" class="primary" type="button">Use my location</button>
+       <span id="locStatus" class="muted">Showing distances from Gann Valley, SD, until you share your location.</span></p>
+    <p class="sort-row"><label>Show first <select id="selSort"><option value="high">Highest price first</option><option value="near">Closest first</option></select></label> <label>How far to look <select id="selRadius"><option value="50">50 miles</option><option value="100">100 miles</option><option value="150">150 miles</option><option value="200">200 miles</option><option value="300" selected>300 miles</option><option value="9999">Any distance</option></select></label></p>
+    <div id="bestCards" class="cards"></div>
+    <p class="muted small">Your location stays on this phone or computer; it is never sent anywhere. <b>Distance is straight-line miles</b> (as the crow flies), not driving distance. Each bid is a USDA <i>range</i>; ranking uses the top of the range, which is this app’s own choice. Bids of different grades or freight terms (delivered vs FOB — FOB means you haul it yourself) are never mixed — pick the one you want in each card. Most bids are for a <b>region</b> and are drawn at an approximate region center (~), so distances are rough.</p>
+  </section>
+
+  <section id="tab-map" class="tab" role="tabpanel" aria-labelledby="t-map" tabindex="0">
     <div class="split">
       <div class="mapcol">
         <div id="mapNotice" class="banner note" role="status" hidden></div>
@@ -58,10 +96,10 @@
         <p id="mapCredit" class="small muted"></p>
       </div>
       <div class="side">
-        <h2>Bids <span id="mapCount" class="muted"></span></h2>
-        <div class="tablewrap"><table id="bidTable"><thead><tr><th>Location</th><th>USDA bid range</th><th>Basis</th><th title="Straight-line miles, calculated by this app">Mi*</th><th>Posted (CT)</th></tr></thead><tbody></tbody></table></div>
+        <h2>Prices on the map <span id="mapCount" class="muted"></span></h2>
+        <div class="tablewrap"><table id="bidTable"><thead><tr><th>Location</th><th>Price from USDA</th><th><abbr title="How far this price is above or below the futures market, in cents">Basis</abbr></th><th title="Straight-line miles, calculated by this app">Miles*</th><th>Posted (Central time)</th></tr></thead><tbody></tbody></table></div>
         <p id="selNote" class="small muted"></p>
-        <p class="small muted">* Mi = straight-line (as-the-crow-flies) miles from you (or Gann Valley) to the pin, calculated by this app; not driving distance. ~ = region bid, approximate pin.</p>
+        <p class="small muted">* Miles = straight-line (as-the-crow-flies) miles from you (or Gann Valley) to the pin, calculated by this app; not driving distance. ~ = region bid, approximate pin. <b>Basis</b> is how far the cash price is above or below the futures market, in cents. <b>FOB</b> means you haul the grain yourself; <b>Delivered</b> means the posted price is for grain brought to the buyer.</p>
         <div id="outsideNote" class="small"></div>
         <div id="unplaced" class="small"></div>
         <div id="futuresBox"></div>
@@ -69,38 +107,33 @@
     </div>
   </section>
 
-  <section id="tab-best" class="tab" role="tabpanel" aria-labelledby="t-best" tabindex="0">
-    <p><button id="btnLocate" class="primary">Use my location</button>
-       <span id="locStatus" class="muted">Default: Gann Valley, SD</span></p>
-    <p><label>Sort <select id="selSort"><option value="high">Highest bid first</option><option value="near">Closest first</option></select></label> <label>Within <select id="selRadius"><option value="50">50 mi</option><option value="100">100 mi</option><option value="150">150 mi</option><option value="200">200 mi</option><option value="300" selected>300 mi</option><option value="9999">any</option></select> of me</label></p>
-    <div id="bestCards" class="cards"></div>
-    <p class="muted small">Your location stays in this browser; it is never sent anywhere. <b>Distance is straight-line miles</b> (as the crow flies), not driving distance. Each bid is a USDA <i>range</i>; ranking uses the top of the range, which is this app’s own choice. Bids of different grades or freight terms (delivered vs FOB) are never mixed — pick the one you want in each card. Most bids are for a <b>region</b> and are drawn at an approximate region center (~), so distances are rough.</p>
-  </section>
-
   <section id="tab-alerts" class="tab" role="tabpanel" aria-labelledby="t-alerts" tabindex="0">
     <h2>Price alerts</h2>
+    <p class="lead">Get a notice on this device when a USDA regional bid reaches a price you set.</p>
     <form id="alertForm" class="alertform">
       <label>Crop <select id="aCommodity"></select></label>
-      <label>Grade / freight <select id="aVariant"></select></label>
+      <label>Grade and haul <select id="aVariant"></select></label>
       <label>Location <select id="aLocation"></select></label>
-      <label>Alert when <select id="aDir"><option value="gte">bid at or above</option><option value="lte">bid at or below</option></select></label>
-      <label>Price <input id="aPrice" type="number" step="0.01" min="0" placeholder="price" required></label>
+      <label>Alert when <select id="aDir"><option value="gte">price is at or above</option><option value="lte">price is at or below</option></select></label>
+      <label>Price <input id="aPrice" type="number" step="0.01" min="0" placeholder="0.00" required aria-label="Price in dollars"></label>
       <button class="primary" type="submit">Add alert</button>
     </form>
     <div class="muted small" id="notifStatus"></div>
-    <button id="btnNotif">Enable notifications</button> <button id="btnCheck">Check now</button>
+    <p class="btn-row"><button id="btnNotif" type="button">Turn on notifications</button> <button id="btnCheck" type="button">Check alerts now</button></p>
     <ul id="alertList" class="alertlist"></ul>
-    <details class="small"><summary>How alerts work (and their limits)</summary>
+    <details class="small helpwords"><summary>How alerts work (and their limits)</summary>
       <p>Alerts are stored only in this browser (localStorage / IndexedDB). They are checked every time you open the app and about every 15 minutes while it is open. USDA reports are posted once per business day (about 2 to 4 pm Central), so a given alert can only fire once per day's report. Alerts ignore any bid from a report more than 1 business day old, the same bids the app leaves out of its rankings and warns you not to rely on.</p>
       <p><b>No server = no true push.</b> Web Push needs a push service plus a server that sends messages, so a closed app cannot be woken on a schedule by this version. On Chrome/Edge (Android &amp; desktop) an <i>installed</i> app may also get Periodic Background Sync checks (experimental, browser-throttled, not guaranteed). iOS needs the app added to the Home Screen (iOS 16.4+) and only supports notifications while using a push server.</p>
     </details>
   </section>
 
   <section id="tab-history" class="tab" role="tabpanel" aria-labelledby="t-history" tabindex="0">
+    <h2>Price history</h2>
+    <p class="lead">See how a location's USDA bid has changed over time. You can compare two places.</p>
     <div class="controls inline">
       <label>Location <select id="hLocation"></select></label>
       <label>Compare with <select id="hLocation2"></select></label>
-      <label>Range <select id="hRange"><option value="30">30 days</option><option value="90">90 days</option><option value="365">1 year</option><option value="99999" selected>All</option></select></label>
+      <label>Time range <select id="hRange"><option value="30">30 days</option><option value="90">90 days</option><option value="365">1 year</option><option value="99999" selected>All days</option></select></label>
     </div>
     <div class="chartwrap"><canvas id="histChart"></canvas></div>
     <p id="histNote" class="muted small"></p>
@@ -113,7 +146,7 @@
   <p><b>Calculated by this app, not by USDA:</b> the “high end of range” used for ranking, “best”, straight-line distances, map pin positions (region pins are approximate), cents-to-dollars conversion of settlements, the exchange named on each basis (CBOT for corn and soybeans, MGE for spring wheat, KCBT for winter wheat), and changes since the previous report we loaded. Call your elevator to confirm any price. Not trading advice.</p>
   <p>Directory (names and towns only, not prices; not bids): South Dakota Public Utilities Commission, Grain Warehouses/Grain Buyers list, as of October 23, 2026 (<a href="https://puc.sd.gov/warehouse/">https://puc.sd.gov/warehouse/</a>); North Dakota Department of Agriculture, Grain Storage Warehouse Licenses (<a href="https://lars.ndda.nd.gov/public/allLicenses/4/">https://lars.ndda.nd.gov/public/allLicenses/4/</a>), undated list, fetched October 28, 2026; Nebraska Public Service Commission, Licensed Grain Warehouses (Location Capacity Report), as of October 28, 2026, and Grain Dealer List, as of September 29, 2026 (<a href="https://psc.nebraska.gov/grain">https://psc.nebraska.gov/grain</a>); Iowa Department of Agriculture and Land Stewardship, Licensed Grain Dealers and Licensed Grain Warehouses (<a href="https://iowaagriculture.gov/administrative/licensed-businesses-ag-directories">https://iowaagriculture.gov/administrative/licensed-businesses-ag-directories</a>), undated list, fetched October 28, 2026; Minnesota Department of Agriculture, Licensing Information Search (<a href="https://www2.mda.state.mn.us/webapp/lis/default.jsp">https://www2.mda.state.mn.us/webapp/lis/default.jsp</a>), undated list, fetched October 28, 2026. Compiled from public lists by the app owner. Not reviewed or endorsed by these agencies; may be out of date or incomplete; a license is not a bid or an offer to buy. List dates above, locations approximate.</p>
   <p>Map: base map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>), packaged as a <a href="https://github.com/protomaps/basemaps">Protomaps</a> basemap and, by default, served from this site (the default setup sends no map requests to any other company). Drawn with <a href="vendor/LICENSE-leaflet.txt">Leaflet</a> (BSD-2-Clause) and <a href="vendor/LICENSE-protomaps-leaflet.txt">protomaps-leaflet</a> (BSD-3-Clause); charts by <a href="vendor/LICENSE-chartjs.txt">Chart.js</a> (MIT).</p>
-  <p><a href="terms.html">Terms of Use</a> &middot; <a href="privacy.html">Privacy Policy</a></p>
+  <p class="legal-links"><a href="terms.html">Terms of Use</a> &middot; <a href="privacy.html">Privacy Policy</a></p>
 </footer>
 <script src="config.js"></script>
 <script src="mapmode.js"></script>
