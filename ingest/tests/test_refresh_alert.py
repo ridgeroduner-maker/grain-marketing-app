@@ -25,7 +25,7 @@ class AlertJobTests(unittest.TestCase):
 
     def test_runs_after_build_and_deploy_on_main_and_uses_builtin_token(self):
         job = job_block("refresh-alert")
-        self.assertIn("needs: [build, deploy]", job)
+        self.assertRegex(job, r"needs: \[build, deploy(, partial-check)?\]")
         self.assertIn("!cancelled()", job); self.assertIn("github.ref == 'refs/heads/main'", job)
         self.assertIn("GH_TOKEN: ${{ github.token }}", job)
         self.assertNotIn("secrets.", CODE)

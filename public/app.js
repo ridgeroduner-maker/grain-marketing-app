@@ -84,6 +84,9 @@ function renderStatus() {
   const last = m.last_ingest_ok_at || m.generated_at;
   msgs.push(`Newest USDA reports: <b>${esc(m.latest_report_date)}</b> (${reps.length ? (prelim.length ? 'some PRELIMINARY' : 'all Final') : 'status unknown'}). ` +
     `Last successful data update: <b>${esc(last ? fmtPosted(last) : 'unknown')}</b> (${esc(ago(last))}; Central Time).`);
+  // Partial publish: a USDA report that failed in the latest update is listed here and none of its bids are in latest.json.
+  const unav = m.unavailable_reports || [];
+  if (unav.length) warn.push(`<b>Unavailable:</b> ${unav.map(u => esc(u.label || u.source_report)).join(', ')} could not be read in the latest update, so ${unav.length === 1 ? 'its bids are' : 'their bids are'} not shown. The other USDA reports are shown as usual.`);
   if (prelim.length) warn.push('Preliminary reports (' + esc(prelim.join(', ')) + ') can change when USDA finalizes them.');
   // Per-report staleness (one rule, alerts-core.js): flag ANY single report that is 2+ business days old, even when others are current (e.g. only ND aged).
   const stale = reps.map(([k, t]) => ({ name: t.label || k, date: t.report_date, b: bdaysBetween(t.report_date, chicagoToday()) })).filter(x => x.b >= GrainAlerts.DO_NOT_RELY_BDAYS);
