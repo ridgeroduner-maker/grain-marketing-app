@@ -19,6 +19,23 @@
     return rows.filter(r => bdaysBetween(r.report_date, today) <= maxB);
   }
 
+  // Hard limit (same number as STALE_EXPIRE_DAYS in ingest/config.py, also sent as meta.stale_expire_days): a bid whose USDA report date
+  // is more than this many CALENDAR days before today (Central) is hidden in the browser, even when the export did not run (audit F-02).
+  const STALE_EXPIRE_DAYS = 7;
+  function calendarDaysBetween(d0, d1) {      // whole days from d0 to d1 (YYYY-MM-DD); negative if d1 is earlier
+    return Math.round((Date.parse(d1 + 'T12:00:00Z') - Date.parse(d0 + 'T12:00:00Z')) / 864e5);
+  }
+  // Split rows into { kept, hidden }: hidden = report date more than maxDays calendar days before today, or no valid report date.
+  function splitExpired(rows, maxDays, today) {
+    today = today || chicagoToday();
+    const lim = Number.isFinite(maxDays) ? maxDays : STALE_EXPIRE_DAYS, kept = [], hidden = [];
+    for (const r of rows || []) {
+      const age = /^\d{4}-\d{2}-\d{2}$/.test(r && r.report_date) ? calendarDaysBetween(r.report_date, today) : NaN;
+      (Number.isFinite(age) && age <= lim ? kept : hidden).push(r);
+    }
+    return { kept, hidden };
+  }
+
   function evaluate(alerts, latest) {
     const fired = [];
     for (const a of alerts) {
@@ -52,6 +69,6 @@
   async function kvSet(k, v) { const d = await idb(); return new Promise((res, rej) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); }
   async function kvGet(k) { const d = await idb(); return new Promise((res, rej) => { const r = d.transaction('kv').objectStore('kv').get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
 
-  root.GrainAlerts = { evaluate, kvSet, kvGet, bdaysBetween, chicagoToday, freshRows, MAX_RELIABLE_BDAYS, DO_NOT_RELY_BDAYS, MAX_ALERT_AGE_BDAYS: MAX_RELIABLE_BDAYS };
+  root.GrainAlerts = { evaluate, kvSet, kvGet, bdaysBetween, chicagoToday, freshRows, calendarDaysBetween, splitExpired, STALE_EXPIRE_DAYS, MAX_RELIABLE_BDAYS, DO_NOT_RELY_BDAYS, MAX_ALERT_AGE_BDAYS: MAX_RELIABLE_BDAYS };
 if (typeof module !== "undefined") module.exports = root.GrainAlerts;
 })(typeof self !== 'undefined' ? self : this);
