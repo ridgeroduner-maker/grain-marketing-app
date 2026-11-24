@@ -62,6 +62,8 @@ def check_dist(dist_dir, data_dir):
         bad.append("dist/ contains *.test.js")
     if list(d.rglob("*data-sample*")):
         bad.append("dist/ contains data-sample")
+    if (d / "contrib").exists() or any(p.name == "contrib" for p in d.rglob("*")):
+        bad.append("dist/ contains contrib/")
     if (d / ".env").exists() or list(d.rglob(".env*")):
         bad.append("dist/ contains an .env file")
     try:

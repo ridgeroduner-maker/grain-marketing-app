@@ -183,10 +183,12 @@ class CiCheckTests(unittest.TestCase):
         if existed: self.skipTest("dist/ exists locally; not touching it")
         self.addCleanup(shutil.rmtree, dist, True)
         subprocess.run(["bash", str(ROOT / "build_dist.sh")], cwd=ROOT, check=True, capture_output=True)
+        self.assertFalse((dist / "contrib").exists(), "build_dist.sh must not copy contrib/ into dist/")
         self.assertEqual(ci_check.check_dist(dist, ROOT / "public" / "data"), [])
         (dist / "x.test.js").write_text("1"); (dist / "data-sample").mkdir(); (dist / ".nojekyll").unlink()
+        (dist / "contrib").mkdir(); (dist / "contrib" / "leak.csv").write_text("x")
         probs = " ".join(ci_check.check_dist(dist, ROOT / "public" / "data"))
-        for s in ("*.test.js", "data-sample", ".nojekyll"): self.assertIn(s, probs)
+        for s in ("*.test.js", "data-sample", ".nojekyll", "contrib/"): self.assertIn(s, probs)
 
 
 if __name__ == "__main__":
