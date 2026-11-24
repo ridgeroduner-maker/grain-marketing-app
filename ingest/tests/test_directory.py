@@ -240,7 +240,11 @@ class SourceCsvStaysOutOfGit(unittest.TestCase):
         r = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True)
         if r.returncode == 0:
             tracked = [f for f in r.stdout.splitlines() if f.endswith(".csv")]
-            self.assertTrue(all(f.startswith("ingest/tests/fixtures/") for f in tracked), tracked)      # only the synthetic fixtures
+            allowed = ("ingest/tests/fixtures/", "contrib/")
+            self.assertTrue(all(f.startswith(allowed) for f in tracked), tracked)   # fixtures and research CSVs only
+            self.assertFalse(any(f.startswith("public/") for f in tracked), tracked)  # a public/ CSV would ship with the site
+            # private source lists (elevator-directory-v2.csv and any root-level CSV) must stay untracked
+            self.assertFalse(any(Path(f).name.startswith("elevator-directory") or Path(f).parent == Path(".") for f in tracked), tracked)
     def test_fixtures_are_synthetic(self):
         for f in FIX.glob("*.csv"):
             names = [row["name"] for row in csv.DictReader(f.open(encoding="utf-8-sig"))]
@@ -255,6 +259,8 @@ class BuildScriptWiring(unittest.TestCase):
         self.assertNotIn("--csv", code); self.assertNotRegex(code, r"\.csv|elevator-directory|data/source")        # no executable line touches the source CSV
         self.assertLess(sh.index("ingest.build_directory --check"), sh.index("cp -r public/."))        # validated before dist is copied
         ci = (ROOT / "deploy" / "ci_check.py").read_text(); self.assertIn("data/directory.json", ci)
+        self.assertIn("cp -r public/. dist/", sh)          # dist is built from public/ only, so contrib/ cannot ship
+        self.assertIn("dist/ contains contrib/", ci)
 
     def test_check_rejects_bad_json(self):
         good = json.loads((PUBLIC / "data" / "directory.json").read_text())
