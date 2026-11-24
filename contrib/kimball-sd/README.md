@@ -7,7 +7,7 @@ A free iPhone-first app for farmers near Kimball, SD. It covers elevators within
 - [AUDIT.md](AUDIT.md) — research and plan audit (November 10, 2026)
 - [ENHANCEMENTS.md](ENHANCEMENTS.md) — prioritized next steps, tied to milestones M0–M7
 
-Elevator lists: original `research/grain_elevators.csv` (899 rows, unchanged) and cleaned working copy `research/grain_elevators_cleaned.csv` (875 rows; see the audit for what changed).
+Elevator lists: original `research/grain_elevators.csv` (870 rows) and cleaned working copy `research/grain_elevators_cleaned.csv` (846 rows; see the audit for what changed). On 2026-11-24, 29 Iowa rows the repo owner asked to keep out of the public repo were removed from both files (another elevator the owner also asked to keep out was not in these files).
 
 ## Decisions so far (2026-10-27)
 - For farmers around Kimball, and free

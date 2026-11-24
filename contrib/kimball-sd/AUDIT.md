@@ -3,7 +3,7 @@
 Audit date: November 10, 2026 (America/Chicago).  
 Scope: the planning-stage repo at `/workspace/grain-marketing-app`. There is still no app code. This is a research-and-plan audit only.
 
-Original elevator list kept as `research/grain_elevators.csv` (899 rows). A cleaned working copy is `research/grain_elevators_cleaned.csv` (875 rows). No data was invented. Coordinates were not guessed for Liberty Grain. Near-duplicate facilities that might be two plants sharing a town pin were flagged, not merged.
+Original elevator list kept as `research/grain_elevators.csv` (870 rows after a 2026-11-24 owner-directed removal of 29 Iowa rows; was 899). A cleaned working copy is `research/grain_elevators_cleaned.csv` (846 rows; was 875 after the AgMark merge described below). No data was invented. Coordinates were not guessed for Liberty Grain. Near-duplicate facilities that might be two plants sharing a town pin were flagged, not merged.
 
 Live USDA PDFs were fetched from `https://www.ams.usda.gov/mnreports/ams_<ID>.pdf`. Bid-URL checks recorded HTTP status only, with a research User-Agent, and did not save bid content.
 
@@ -21,7 +21,7 @@ Live USDA PDFs were fetched from `https://www.ams.usda.gov/mnreports/ams_<ID>.pd
 
 ### 1. High — Many “bid pages” are API endpoints, not pages a farmer can open
 
-205 of 899 rows (kept in the cleaned file too) point `bid_url` at an API, not a public board:
+205 of the remaining 870 rows (kept in the cleaned file too) point `bid_url` at an API, not a public board:
 
 | Host / pattern | Rows | Status on November 10, 2026 (sample) |
 | --- | --- | --- |
@@ -48,7 +48,7 @@ Other link issues:
 - **24 AgMark LLC. Kansas locations** appear twice, once on `agmarkllc.agricharts.com` and once on `agmarkresp.agricharts.com`, with identical coordinates. These were merged in the cleaned file. Both URLs were kept (`bid_url` plus `alternate_bid_url`). Kansas falls from 71 rows in the original to 47 in the cleaned file. AgMark Speed stays `enabled=False`.
 - **Four other pairs were not merged**, because the source filenames look like two facilities that were pinned to the same town point: CHS Holdrege Holdrege (`holdregewest` vs `holdregeshuttle`), CHS High Plains Holyoke (`holyokeshuttle` vs `stateline`; a third Holyoke row sits about a mile away and was left as-is), Heartland Co-op Earlham (`earlham` vs `earlhamfeedmill`), and Frenchman Valley Chappell (`chappell` vs `northchappell`, and the crop tags already disagree — one lists milo, the other does not). Flag: `same_coords_different_source_files`.
 
-Separately, 100 cleaned rows share coordinates with a *differently named* row (town-level pins). Examples near Kimball: Agtegra “Redfield Energy,” “Redfield Elevator,” and several AGP/Aberdeen labels all sit on the same point. These were flagged (`shared_coords_different_name`) and not merged.
+Separately, 100 cleaned rows shared coordinates with a *differently named* row (town-level pins) at the November 10 audit; 93 such rows remain after the 2026-11-24 removal. Examples near Kimball: Agtegra “Redfield Energy,” “Redfield Elevator,” and several AGP/Aberdeen labels all sit on the same point. These were flagged (`shared_coords_different_name`) and not merged.
 
 ### 3. High — Minnesota mapping and freight terms will skew net-price ranking if ignored
 
@@ -61,22 +61,22 @@ Separately, 100 cleaned rows share coordinates with a *differently named* row (t
 
 - `README.md` “Decisions so far” still says “KS and CO map to the nearest state report.” The later plan update, and the build-plan Page, correctly say KS and CO use their own reports (AMS_2886 and AMS_2912). That README line is stale.
 - South Dakota is counted two ways: **116** total in the CSV (and the plan Page), vs **115** in `research/grain_elevators_summary.md` and in `research/canvas.tsx` metrics. The 115 figure is the 116 SD rows minus Liberty Grain (no bid page).
-- “Within 150 miles: 156” uses *listed, rounded* miles, including Liberty Grain (no coordinates) and three locations listed as 150 whose computed distance is 150.09–150.55 miles (Maurice IA, Brunsville IA, Revillo SD). Computed haversine ≤ 150 miles: 152 rows with coordinates.
+- “Within 150 miles” used *listed, rounded* miles. After the 2026-11-24 removal, the lists and `canvas.tsx` snapshot show 155 rows within 150 miles (was 156, including Liberty Grain with no coordinates). Two remaining locations are listed as 150 whose computed distance is 150.09–150.55 miles (Brunsville IA, Revillo SD); Maurice IA was in that set and was removed. Computed haversine ≤ 150 miles is unchanged at 152 rows with coordinates (Maurice computed over 150).
 - The plan Page laptop checklist still says Git needs go-ahead. Git for Windows was already installed on Graden’s laptop. Free Supabase, Expo, and OpenRouteService accounts were not created. The repo still has no GitHub or Origin remote; this audit commits locally only.
-- `canvas.tsx` is a 150-mile snapshot (156 hardcoded rows) under a title that says 300 miles. The crop filter value `"wheat"` matches spring wheat, winter wheat, and “hrw wheat” because it uses `includes`. The state filter omits KS and CO, which is harmless for this 150-mile slice (none are that close) but incomplete if the table is ever expanded.
+- `canvas.tsx` is a 150-mile snapshot (155 hardcoded rows after the 2026-11-24 removal; was 156) under a title that says 300 miles. The crop filter value `"wheat"` matches spring wheat, winter wheat, and “hrw wheat” because it uses `includes`. The state filter omits KS and CO, which is harmless for this 150-mile slice (none are that close) but incomplete if the table is ever expanded.
 
 ### 5. Medium — List quality: missing pin, stale names, unverified source
 
 - **Liberty Grain LLC, Kimball (listed 6 miles east),** is the only row with no latitude or longitude, a blank `enabled` flag (set to `False` in the cleaned file), and `bid_url` of `unknown (none found)`. It is the closest buyer in the list and still unverified. Coordinates were not invented.
 - **VERBIO North America LLC, Nevada, IA** is listed at 300 miles; haversine from 43.75, −98.96 is **300.15** miles. Flag only. Road miles will likely be longer, so the M3 routing batch may drop it.
 - **18 rows** use deprecated-looking operator names still marked `enabled=True`: `zWest-Con` (5), `zFarmers Cooperative Elevator Co.OLD` (11), `zFinley Farmers Grain & Elevator` (2).
-- **28 rows** use the widget title `Cash Bid JSI Site - Ag State` as the operator name (should be reviewed against the real Ag State name).
+- **Removed 2026-11-24, per owner decision:** 28 rows used a widget title as the operator name, plus 1 row at Calumet, IA, for a company the owner asked to keep out of the public repo. Those 29 Iowa rows were dropped from both CSVs. A separately named elevator the owner also asked to keep out was not present in these files.
 - One likely typo: Frontier Cooperative **Tecumsech**, NE (probably Tecumseh). Not renamed.
 - Crop tags that need a human pass: `wht`; `hard red` / `red winter` alongside winter or spring wheat; Liberty Grain “soybeans (2012 report); current unknown.” Tags are inconsistent (`soybean` vs `soybeans`, `wheat` as a generic catch-all on 768 rows). Sunflowers appear on only five boards, all Dakota Mill & Grain in South Dakota. Oats appear on 16 boards (14 SD, 1 MN, 1 NE).
 - The list comes from the unverified public repo [dnilgis/bids](https://github.com/dnilgis/bids) (no LICENSE). Treat it as a research index only.
 - Location precision: 573 town, 273 street, 3 county, 49 blank, 1 “news report.” That matches the plan’s “50 blank or other” if the news-report row is included. Town-level pins are why so many different names share coordinates.
 
-No rows had invalid or swapped coordinates. Listed integer miles match haversine from 43.75, −98.96 within 1 mile, except the three 150-mile rounding cases and Liberty Grain (no pin). State counts in the *original* file match the plan: IA 276, NE 244, MN 135, SD 116, KS 71, ND 49, CO 8.
+No rows had invalid or swapped coordinates. Listed integer miles match haversine from 43.75, −98.96 within 1 mile, except the three 150-mile rounding cases and Liberty Grain (no pin). State counts in the original file as audited on November 10 were IA 276, NE 244, MN 135, SD 116, KS 71, ND 49, CO 8. After the 2026-11-24 removal, the original file is IA 247, NE 244, MN 135, SD 116, KS 71, ND 49, CO 8 (870 rows).
 
 ---
 
@@ -129,8 +129,8 @@ Caveats, which the plan already flags in part:
 
 ## `canvas.tsx` issues
 
-- Metrics: “115 in South Dakota” and “156 within 150 mi” have the counting quirks above.
-- Title says 300 miles; the table is the 150-mile subset only (156 rows), which matches the section caption but not the page title.
+- Metrics: “115 in South Dakota” is unchanged. “Within 150 mi” is 155 after the 2026-11-24 removal (was 156; see the counting quirks above).
+- Title says 300 miles; the table is the 150-mile subset only (155 rows after the 2026-11-24 removal), which matches the section caption but not the page title.
 - Crop filter `"wheat"` is too broad; `"soybean"` happens to match `soybeans` too.
 - Hardcoded snapshot will drift as the CSV is cleaned; it is a research Page export, not app code.
 - Several bid links in that snapshot are the same API endpoints called out above.
@@ -172,10 +172,17 @@ Not changed: `research/canvas.tsx` (research snapshot), plan Page (lives outside
 ## Still open
 
 - Confirm Liberty Grain’s coordinates, crops, and whether it still buys grain (needs a local check or a call; approval required before any call).
-- Human-verify the 4 same-pin facility pairs, the 18 `z` / `.OLD` operators, “Cash Bid JSI Site - Ag State,” and town-level shared pins, closest first.
+- Human-verify the 4 same-pin facility pairs, the 18 `z` / `.OLD` operators, and town-level shared pins, closest first.
 - Replace API `bid_url` values with farmer-facing pages where a website already has one. Do not invent URLs that are not already in the data.
 - Map each elevator to the correct USDA region; do not assign AMS_3049 to northern Minnesota; handle ND FOB vs DLVD elsewhere.
 - Match AMS_2887 towns to elevators; decide what to show when there is no town match (including Dakota Mill locations that list sunflowers on their boards but may not appear in the USDA town table).
 - Road-route from Kimball and drop locations beyond 300 *road* miles (M3). Straight-line 300 is only a first cut.
 - GitHub / Origin backup of this repo still has not been pushed (no remote). That needs Graden’s GitHub sign-in.
 - Free Supabase, Expo, and OpenRouteService accounts are still outstanding, and need Graden’s sign-up (passwords stay in his password manager).
+
+---
+
+## Update — November 24, 2026
+
+Per the repo owner's decision, 29 rows were removed from both elevator CSVs and from the `canvas.tsx` 150-mile snapshot (1 of the 29 was in that snapshot). All 29 were Iowa locations. Counts after the removal: original CSV 870 rows, cleaned CSV 846 rows, canvas snapshot 155 rows, Iowa 247, AgriCharts widgets 485, within 150 listed miles 155. USDA report PDFs and extracted text in `research/usda_reports/` were not edited; they contained no matching elevator entries. Kimball, SD and Kimball, NE town rows were kept.
+

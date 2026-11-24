@@ -63,7 +63,7 @@ This plan assumes the decisions already on the build-plan Page: USDA regional pr
 
 ### E6. Routing batch and the 300-mile cut — M3
 - Replace straight-line `miles` with OpenRouteService road miles and drive time from Kimball, in chunks, on the HeiGIT host.
-- Drop anything over 300 *road* miles. Expect some of the 899 (875 cleaned) to fall out, including likely VERBIO Nevada, IA (already 300.15 miles straight-line).
+- Drop anything over 300 *road* miles. Expect some of the 870 (846 cleaned) to fall out, including likely VERBIO Nevada, IA (already 300.15 miles straight-line).
 - Liberty Grain cannot be routed until it has coordinates.
 
 ### E7. In-app coverage and history — M5–M7
