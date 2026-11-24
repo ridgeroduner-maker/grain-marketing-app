@@ -144,7 +144,7 @@ function setMapCredit(choice) {
   const el = $('mapCredit');
   if (choice && choice.mode !== 'blank') el.innerHTML = 'Map: ' + (choice.attribution || '') + '. Bid pins, the ring and distances are this app’s own overlay.';
   else el.textContent = 'No map tiles are loaded in this view.';
-  $('legendBox').innerHTML = '<span class="dot solid"></span> town bid (sunflower processors) &nbsp; <span class="dot dashed"></span> region bid — pin is approximate (~) &nbsp; dashed ring ≈ 300 mi straight-line from Gann Valley';
+  $('legendBox').innerHTML = '<span class="dot solid"></span> town price (sunflower plants) &nbsp; <span class="dot dashed"></span> region price — the pin is an approximate center (~) &nbsp; dashed ring ≈ 300 miles straight-line from Gann Valley';
 }
 const BLANK_NOTE = {
   unconfigured: '<b>Map tiles not configured.</b> Pins and the 300-mile ring are drawn on a plain background. (Build <code>tiles/plains.pmtiles</code> with <code>./build_tiles.sh</code> or set <code>MAP_TILES_URL</code> — see README “Map”.)',
@@ -252,7 +252,7 @@ function renderTable() {
   const rows = filtered().sort((a, b) => b.bid_high - a.bid_high), pos = myPos();
   $('mapCount').textContent = '(' + rows.length + ' locations)';
   const first = rows[0];
-  $('selNote').innerHTML = first ? `Grade: <b>${esc(first.grade)}</b>${first.protein ? ' · ' + esc(first.protein) : ''} · Freight: <b>${esc(first.freight_label)}</b>. Other grades and freight terms are separate choices in “Product”.` : '';
+  $('selNote').innerHTML = first ? `Grade: <b>${esc(first.grade)}</b>${first.protein ? ' · ' + esc(first.protein) : ''} · Haul: <b>${esc(first.freight_label)}</b>. Other grades and haul terms are separate choices under “Grade and haul” above.` : '';
   $('bidTable').querySelector('tbody').innerHTML = rows.map((r, i) =>
     `<tr class="row" data-i="${i}"><td>${esc(r.location)}${isRegion(r) ? ' <span class="muted" title="' + esc(APPROX_NOTE) + '">~</span>' : ''}${tag(r)}</td><td class="n">${range(r)}</td><td>${esc(basisTxt(r))}</td><td class="n">${Math.round(haversine(pos.lat, pos.lon, r.lat, r.lon))}</td><td class="small">${esc(r.posted_at ? fmtPosted(r.posted_at).replace(/^\w+, /, '') : postedLbl(r))}</td></tr>`).join('') || '<tr><td colspan="5">No bids for this selection.</td></tr>';
   $('bidTable').querySelectorAll('tr.row').forEach(tr => {
@@ -294,7 +294,7 @@ function renderBest() {
     const top = rows[0];
     const line = (r, n) => `<li><b>#${n}</b> ${esc(r.location)}${isRegion(r) ? '<span class="muted">~</span>' : ''}: ${range(r)}${unitLbl(r)} · <b>${Math.round(r.dist)} mi</b> straight-line <span class="muted small">(${esc(postedLbl(r))})</span>${tag(r)}</li>`;
     cards.push(`<div class="card"><h3>${esc(state.meta.commodities[c])}</h3>
-      <label class="small muted">Grade / freight <select data-best="${c}">${variantsFor(c).map(v => `<option value="${esc(v)}" ${v === variant ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>` +
+      <label class="small muted">Grade and haul <select data-best="${c}">${variantsFor(c).map(v => `<option value="${esc(v)}" ${v === variant ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>` +
       (top ? `<div class="big">${range(top)}<small>${unitLbl(top)}</small></div>
         <div class="small">${sortMode === 'near' ? 'Closest' : 'Highest'} of ${rows.length} bids in range: <b>${esc(top.location)}</b>${isRegion(top) ? ' (region — approximate)' : ''}, <b>${Math.round(top.dist)} mi</b> straight-line</div>
         <div class="small">Grade ${esc(top.grade)}${top.protein ? ' · ' + esc(top.protein) : ''} · ${esc(top.freight_label)}</div>
@@ -302,7 +302,7 @@ function renderBest() {
         <div class="small confirm">☎ ${esc(CONFIRM_NOTE)}</div>
         <ol class="ranked" start="2">${rows.slice(1, 4).map((r, i) => line(r, i + 2)).join('')}</ol>`
         : `<p class="muted">No ${staleRows.length ? 'up-to-date ' : 'current '}bids within ${rad > 9000 ? 'range' : rad + ' mi'}.</p>`) +
-      (staleRows.length ? `<div class="small warnTxt">⚠ Not ranked, report more than 1 business day old: ${staleRows.map(r => esc(r.location) + ' (' + range(r) + ', report ' + esc(r.report_date) + ', ' + r.bage + ' business days old)').join('; ')}.</div>` : '') +
+      (staleRows.length ? `<details class="stale-list"><summary class="warnTxt">⚠ ${staleRows.length} bid${staleRows.length===1?'':'s'} not ranked — report more than 1 business day old (tap to see them)</summary><p class="small warnTxt">${staleRows.map(r => esc(r.location) + ' (' + range(r) + ', report ' + esc(r.report_date) + ', ' + r.bage + ' business days old)').join('; ')}.</p></details>` : '') +
       unplacedHigher(c, variant, top) + '</div>');
   }
   $('bestCards').innerHTML = cards.join('');
@@ -426,17 +426,43 @@ function renderChart() {
 }
 
 // ---------- tabs / install / sw ----------
+
+function wireWelcome() {
+  const btn = $('btnSeePrices');
+  if (!btn) return;
+  btn.onclick = () => {
+    const tab = $('t-best');
+    if (tab) tab.click();  // also scrolls to the tab bar when the panel is off-screen
+  };
+}
 function initTabs() {
   const tabs = [...document.querySelectorAll('.tabs button')];
   tabs.forEach((b, i) => b.onkeydown = (e) => {          // arrow keys / Home / End move between tabs (WAI-ARIA tabs pattern)
     const j = { ArrowRight: (i + 1) % tabs.length, ArrowLeft: (i + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 }[e.key];
     if (j != null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
   });
+  const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Scroll to the crop filters / tab content. Do not scrollIntoView the tab bar itself: it is position:sticky,
+  // so when you are at the footer that only keeps the stuck bar in place and leaves the page at the bottom.
+  const scrollToWork = () => {
+    const target = document.querySelector('.controls') || document.querySelector('main');
+    if (!target) return;
+    const tabs = document.querySelector('.tabs');
+    const tabH = tabs ? tabs.offsetHeight : 0;
+    const top = target.getBoundingClientRect().top + window.scrollY - tabH - 6;
+    window.scrollTo({ top: Math.max(0, top), behavior: reduceMotion() ? 'auto' : 'smooth' });
+  };
   tabs.forEach(b => b.onclick = () => {
     tabs.forEach(x => { x.setAttribute('aria-selected', x === b); x.tabIndex = x === b ? 0 : -1; });
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + b.dataset.tab));
     if (b.dataset.tab === 'map') setTimeout(() => MV && MV.resize(), 50);
     if (b.dataset.tab === 'history') renderChart();
+    const panel = document.getElementById('tab-' + b.dataset.tab);
+    if (panel) {
+      const r = panel.getBoundingClientRect(), tabBar = document.querySelector('.tabs');
+      const tabH = tabBar ? tabBar.getBoundingClientRect().bottom : 80;
+      if (r.top > window.innerHeight * 0.65 || r.bottom < tabH + 20) scrollToWork();
+    }
   });
 }
 let deferredPrompt;
@@ -455,7 +481,7 @@ async function registerSW() {
   try {
     try { state.me = JSON.parse(localStorage.getItem('grain.me') || 'null'); } catch (e) { }
     await loadAll();
-    initTabs(); await initMap(); initFilters(); initAlerts(); renderStatus();
+    initTabs(); wireWelcome(); await initMap(); initFilters(); initAlerts(); renderStatus();
     window.addEventListener('online', renderStatus); window.addEventListener('offline', renderStatus);
     $('btnLocate').onclick = locate; $('selRadius').onchange = renderBest; $('selSort').onchange = renderBest;
     $('hLocation').onchange = renderChart; $('hLocation2').onchange = renderChart; $('hRange').onchange = renderChart;
