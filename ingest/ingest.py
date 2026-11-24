@@ -108,6 +108,7 @@ def run(source, date_iso, backfill_days, export, accept_row_drop=False):
             failures += 1
             traceback.print_exc()
             summary.append(f"AMS_{slug} FAILED: {e}")
+            print(f"AMS_{slug} FAILED: {e}", file=sys.stderr)       # one line per failed report (quoted in the refresh-failure issue)
     con.execute("INSERT INTO ingest_runs(started_at,finished_at,source,summary,ok) VALUES (?,?,?,?,?)",
                 (started, export_json.now_central().isoformat(), "mars" if use_mars else "pdf",
                  "\n".join(summary), 0 if failures else 1))
