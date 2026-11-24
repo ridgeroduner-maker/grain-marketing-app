@@ -1,0 +1,104 @@
+                      Colorado Daily Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      CO Dept. of Ag Market News                                                                                                                         October 26, 2026
+Email us with accessibility issues with this report.
+
+Grain Report for 10/26/2026 - Final
+CO millet and sunflower bids are now a part of the National Daily Sunflower, Flax, Canola and Millet Report and are accessible at:
+https://www.ams.usda.gov/mnreports/AMS_2887.pdf
+
+Futures Settlements
+     Exchange               Commodity                                                       Closing Settlement Prices (¢/bu) as of 10/26/2026
+       CBOT                    Corn             455.00 (Dec 26)     468.75 (Mar 27)      477.50 (May 27)     484.00 (Jul 27)     480.25 (Sep 27)    494.00 (Dec 27)    507.75 (Mar 28)
+       CBOT                  Soybeans          1241.25 (Nov 26)     1252.50 (Jan 27)     1261.00 (Mar 27) 1270.00 (May 27) 1276.50 (Jul 27)        1261.50 (Aug 27)    1230.50 (Sep 27)
+       CBOT                   Wheat             616.00 (Dec 26)     629.75 (Mar 27)      636.50 (May 27)     640.00 (Jul 27)     649.00 (Sep 27)    662.75 (Dec 27)    673.00 (Mar 28)
+       CBOT                 White Oats          360.50 (Dec 26)     371.25 (Mar 27)      375.50 (May 27)     373.25 (Jul 27)     367.50 (Sep 27)    376.00 (Dec 27)    379.50 (Mar 28)
+       KCBT                   Wheat             659.00 (Dec 26)     668.75 (Mar 27)      672.75 (May 27)     674.50 (Jul 27)     683.00 (Sep 27)    695.50 (Dec 27)    703.00 (Mar 28)
+        MGE                   Wheat             634.00 (Dec 26)     651.25 (Mar 27)      663.75 (May 27)     675.50 (Jul 27)     684.25 (Sep 27)    700.75 (Dec 27)
+
+Coarse
+                                                                                       US #2 Yellow Corn (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)       Basis Change               Price($/Bu)          Price Change         Average Year Ago     Freight       Delivery
+  North Central          Bid             80.00Z to 85.00Z         UNCH                 5.3500-5.4000           DN 0.0100           5.3625 4.7975        DLVD-T        Current
+  North Central          Bid                  80.00Z              UNCH                     5.3500              DN 0.0100           5.3500 4.6375        DLVD-T          Dec
+    Northeast            Bid             10.00Z to 45.00Z     UP 2.00-UNCH             4.6500-5.0000      UP 0.0100-DN 0.0100      4.7675 3.9957        DLVD-T        Current
+    Northeast            Bid             10.00Z to 20.00Z         UNCH                 4.6500-4.7500           DN 0.0100           4.7000               DLVD-T          Dec
+    Southeast            Bid                 -20.00Z              UNCH                     4.3500              DN 0.0100           4.3500 4.1125        DLVD-T        Current
+    Southeast            Bid             -5.00Z to 20.00Z         UNCH                 4.5000-4.7500           DN 0.0100           4.6000 4.1125        DLVD-T          Dec
+       East              Bid             8.00Z to 55.00Z          UNCH                 4.6300-5.1000           DN 0.0100           4.7317 3.8475        DLVD-T        Current
+       East              Bid                  15.00Z              UNCH                     4.7000              DN 0.0100           4.7000 3.8875        DLVD-T          Dec
+
+                                                                                        US #2 Sorghum (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)           Basis Change          Price($/Bu)            Price Change        Average Year Ago     Freight       Delivery
+  North Central          Bid                 10.00Z                  UNCH                 4.6500                DN 0.0100          4.6500 3.2875        DLVD-T        Current
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                                            Page 1 of 3
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2912
+                      Colorado Daily Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      CO Dept. of Ag Market News                                                                                                                 October 26, 2026
+Email us with accessibility issues with this report.
+  North Central            Bid                 10.00Z              UNCH                 4.6500             DN 0.0100         4.6500   3.2875      DLVD-T       Dec
+   Northeast               Bid          -60.00Z to -55.00Z         UNCH             3.9500-4.0000          DN 0.0100         3.9625   3.0892      DLVD-T      Current
+   Northeast               Bid                -60.00Z              UNCH                 3.9500             DN 0.0100         3.9500               DLVD-T       Dec
+   Southeast               Bid           -75.00Z to -5.00Z   UP 10.00-UP 60.00      3.8000-4.5000     UP 0.0900-UP 0.5900    4.0667   3.1375      DLVD-T       Dec
+       East                Bid          -65.00Z to -45.00Z         UNCH             3.9000-4.1000          DN 0.0100         3.9833   3.0925      DLVD-T      Current
+       East                Bid                -65.00Z              UNCH                 3.9000             DN 0.0100         3.9000   3.1375      DLVD-T       Dec
+
+                                                                                    US #1 Soybeans (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type          Basis (¢/Bu)          Basis Change          Price($/Bu)            Price Change     Average Year Ago     Freight     Delivery
+    Northeast            Bid          -85.00X to -75.00X          UNCH            11.5625-11.6625            DN 0.1525       11.6425 9.4425       DLVD-T      Current
+    Northeast            Bid               -75.00X                UNCH                11.6625                DN 0.1525       11.6625              DLVD-T       Nov
+       East              Bid               -85.00X                UNCH                11.5625                DN 0.1525       11.5625 9.4225       DLVD-T      Current
+
+                                                                              US #1 Hard Red Winter Wheat (Bulk)
+Country Elevators - Conventional
+ Region/Location Sale Type Protein            Basis (¢/Bu)           Basis Change          Price($/Bu)        Price Change     Average Year Ago     Freight     Delivery
+  North Central         Bid      Ordinary -25.00Z to 0.00Z              UNCH             6.3400-6.5900         DN 0.0550       6.4275 4.6675        DLVD-T      Current
+  North Central         Bid      Ordinary -55.00N to -30.00N            UNCH             6.1950-6.4450         DN 0.0700       6.2950 4.9833        DLVD-T      Jun - Jul
+    Northeast           Bid      Ordinary -85.00Z to -45.00Z            UNCH             5.7400-6.1400         DN 0.0550       6.0121 3.9936        DLVD-T      Current
+    Northeast           Bid      Ordinary -95.00N to 0.00N              UNCH             5.7950-6.7450         DN 0.0700       5.9006 4.6541        DLVD-T      Jun - Jul
+    Southeast           Bid      Ordinary       -80.00Z                 UNCH                 5.7900            DN 0.0550       5.7900 4.1175        DLVD-T      Current
+    Southeast           Bid      Ordinary      -70.00N                  UNCH                 6.0450            DN 0.0700       6.0450 4.9000        DLVD-T      Jun - Jul
+       East             Bid      Ordinary -70.00Z to -35.00Z            UNCH             5.8900-6.2400         DN 0.0550       5.9800 4.0965        DLVD-T      Current
+       East             Bid      Ordinary -85.00N to -70.00N            UNCH             5.8950-6.0450         DN 0.0700       5.9450 4.6635        DLVD-T      Jun - Jul
+
+
+
+
+Explanatory Notes:
+Price & Basis Values quoted are for Current Delivery, unless otherwise noted.
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                                     Page 2 of 3
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2912
+                      Colorado Daily Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      CO Dept. of Ag Market News                                                                                                          October 26, 2026
+Email us with accessibility issues with this report.
+
+CBOT/KCBT/MGE Trade month symbols: F January; G February; H March; J April; K May; M June; N July; Q August; U September; V October; X November; Z December.
+
+Freight Codes:
+FOB: Freight On Board
+DLVD: Delivered
+CIF: Cost, Insurance, and Freight
+T: Truck, R: Rail, B: Barge, T/R: Truck/Rail, R/B: Rail/Barge, T/R/B: Truck/Rail/Barge, OV: Ocean Vessel
+
+Trade Regions / Misc Info:
+For more information, click here
+
+
+
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                           Page 3 of 3
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2912
+

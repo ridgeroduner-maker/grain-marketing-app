@@ -1,0 +1,154 @@
+                      Kansas Daily Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      KS Dept. of Ag Market News                                                                                                                         October 26, 2026
+Email us with accessibility issues with this report.
+
+Grain Report for 10/26/2026 - Final
+
+Futures Settlements
+     Exchange               Commodity                                                       Closing Settlement Prices (¢/bu) as of 10/26/2026
+       CBOT                    Corn             455.00 (Dec 26)     468.75 (Mar 27)      477.50 (May 27)     484.00 (Jul 27)     480.25 (Sep 27)    494.00 (Dec 27)    507.75 (Mar 28)
+       CBOT                  Soybeans          1241.25 (Nov 26)     1252.50 (Jan 27)     1261.00 (Mar 27) 1270.00 (May 27) 1276.50 (Jul 27)        1261.50 (Aug 27)    1230.50 (Sep 27)
+       CBOT                   Wheat             616.00 (Dec 26)     629.75 (Mar 27)      636.50 (May 27)     640.00 (Jul 27)     649.00 (Sep 27)    662.75 (Dec 27)    673.00 (Mar 28)
+       CBOT                 White Oats          360.50 (Dec 26)     371.25 (Mar 27)      375.50 (May 27)     373.25 (Jul 27)     367.50 (Sep 27)    376.00 (Dec 27)    379.50 (Mar 28)
+       KCBT                   Wheat             659.00 (Dec 26)     668.75 (Mar 27)      672.75 (May 27)     674.50 (Jul 27)     683.00 (Sep 27)    695.50 (Dec 27)    703.00 (Mar 28)
+        MGE                   Wheat             634.00 (Dec 26)     651.25 (Mar 27)      663.75 (May 27)     675.50 (Jul 27)     684.25 (Sep 27)    700.75 (Dec 27)
+
+Coarse
+                                                                                       US #2 Yellow Corn (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)           Basis Change           Price($/Bu)          Price Change         Average Year Ago     Freight       Delivery
+   Northwest             Bid                 -10.00Z                 UNCH                  4.4500              DN 0.0100           4.4500 3.9125        DLVD-T        Current
+   Southwest             Bid             -5.00Z to 30.00Z            UNCH              4.5000-4.8500           DN 0.0100           4.6833 4.1750        DLVD-T        Current
+      South              Bid                  10.00Z                 UNCH                  4.6500              DN 0.0100           4.6500 4.1875        DLVD-T        Current
+      West               Bid            -35.00Z to 10.00Z            UNCH              4.2000-4.6500           DN 0.0100           4.5125 3.9000        DLVD-T        Current
+     Central             Bid                 -35.00Z                 UNCH                  4.2000              DN 0.0100           4.2000 3.7875        DLVD-T        Current
+Terminal Elevators - Conventional
+ Region/Location       Sale Type           Basis (¢/Bu)           Basis Change           Price($/Bu)          Price Change         Average Year Ago     Freight       Delivery
+    Northeast             Bid                -20.00Z                 UNCH                  4.3500              DN 0.0100           4.3500 3.9875        DLVD-T        Current
+    Southeast             Bid                -40.00Z                 UNCH                  4.1500              DN 0.0100           4.1500 3.8375        DLVD-T        Current
+      North               Bid                -45.00Z                 UNCH                  4.1000              DN 0.0100           4.1000 3.7875        DLVD-T        Current
+      South               Bid           -53.00Z to -20.00Z           UNCH              4.0200-4.3500           DN 0.0100           4.1950 3.8150        DLVD-T        Current
+       East               Bid                -40.00Z                 UNCH                  4.1500              DN 0.0100           4.1500 3.8875        DLVD-T        Current
+     Central              Bid                -35.00Z                 UNCH                  4.2000              DN 0.0100           4.2000 3.8375        DLVD-T        Current
+
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                                            Page 1 of 4
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2886
+                      Kansas Daily Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      KS Dept. of Ag Market News                                                                                                     October 26, 2026
+Email us with accessibility issues with this report.
+                                                                               US #2 Sorghum (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)       Basis Change      Price($/Bu)        Price Change      Average Year Ago   Freight   Delivery
+   Northwest             Bid            -65.00Z to -60.00Z       UNCH         3.9000-3.9500         DN 0.0100        3.9250 3.1125      DLVD-T    Current
+   Southwest             Bid            -75.00Z to -65.00Z       UNCH         3.8000-3.9000         DN 0.0100        3.8833 3.2500      DLVD-T    Current
+      South              Bid                 -75.00Z             UNCH             3.8000            DN 0.0100        3.8000 3.3075      DLVD-T    Current
+      West               Bid            -75.00Z to -55.00Z   UP 10.00-UNCH    3.8000-4.0000    UP 0.0900-DN 0.0100   3.9375 3.1350      DLVD-T    Current
+     Central             Bid                 -75.00Z             UNCH             3.8000            DN 0.0100        3.8000 3.0375      DLVD-T    Current
+Terminal Elevators - Conventional
+ Region/Location       Sale Type           Basis (¢/Bu)       Basis Change      Price($/Bu)           Price Change   Average Year Ago   Freight   Delivery
+    Southeast             Bid                -80.00Z             UNCH             3.7500               DN 0.0100     3.7500 3.2375      DLVD-T    Current
+      North               Bid                -80.00Z             UNCH             3.7500               DN 0.0100     3.7500 3.2375      DLVD-T    Current
+      South               Bid           -69.00Z to -55.00Z       UNCH         3.8600-4.0000            DN 0.0100     3.9275 3.3250      DLVD-T    Current
+       East               Bid                -60.00Z             UNCH             3.9500               DN 0.0100     3.9500 3.2875      DLVD-T    Current
+     Central              Bid           -60.00Z to -30.00Z       UNCH         3.9500-4.2500            DN 0.0100     4.0500 3.3708      DLVD-T    Current
+Livestock Feeding Operations - Conventional
+  Region/Location    Sale Type          Basis (¢/Bu)          Basis Change     Price($/Bu)            Price Change   Average Year Ago   Freight   Delivery
+    Southwest            Bid              -45.00Z                UNCH            4.1000                DN 0.0100     4.1000             DLVD-T    Current
+
+                                                                              US #1 Soybeans (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)       Basis Change      Price($/Bu)           Price Change   Average Year Ago   Freight   Delivery
+   Northwest             Bid                  -95.00X            UNCH            11.4625               DN 0.1525     11.4625 9.5225     DLVD-T    Current
+   Southwest             Bid            -95.00X to -90.00X       UNCH        11.4625-11.5125           DN 0.1525     11.4875 9.6825     DLVD-T    Current
+      South              Bid                  -85.00X            UNCH            11.5625               DN 0.1525     11.5625 9.7225     DLVD-T    Current
+      West               Bid                 -110.00X            UNCH            11.3125               DN 0.1525     11.3125 9.4725     DLVD-T    Current
+Terminal Elevators - Conventional
+ Region/Location       Sale Type           Basis (¢/Bu)       Basis Change     Price($/Bu)            Price Change   Average Year Ago   Freight   Delivery
+    Northeast             Bid                -40.00X             UNCH           12.0125                DN 0.1525     12.0125 10.0725    DLVD-T    Current
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                      Page 2 of 4
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2886
+                      Kansas Daily Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      KS Dept. of Ag Market News                                                                                                              October 26, 2026
+Email us with accessibility issues with this report.
+   Southeast               Bid                -55.00X           UNCH                11.8625              DN 0.1525        11.8625 9.7725       DLVD-T      Current
+       North               Bid                -60.00X           UNCH                11.8125              DN 0.1525        11.8125 9.8225       DLVD-T      Current
+       South               Bid          -52.00X to -15.00X      UNCH            11.8925-12.2625          DN 0.1525        12.0225 9.8365       DLVD-T      Current
+        East               Bid                -40.00X           UNCH                12.0125              DN 0.1525        12.0125 10.0225      DLVD-T      Current
+      Central              Bid          -40.00X to -30.00X      UNCH            12.0125-12.1125          DN 0.1525        12.0625 9.8725       DLVD-T      Current
+Mills and Processors - Conventional
+ Region/Location       Sale Type          Basis (¢/Bu)       Basis Change          Price($/Bu)          Price Change      Average Year Ago     Freight     Delivery
+     Southeast            Bid               20.00X             DN 5.00              12.6125              DN 0.2025        12.6125 10.3725      DLVD-T      Current
+       South              Bid               35.00X              UNCH                12.7625              DN 0.1525        12.7625 10.3725      DLVD-T      Current
+        East              Bid               10.00X              UNCH                12.5125              DN 0.1525        12.5125 10.2225      DLVD-T      Current
+
+                                                                            US #1 Hard Red Winter Wheat (Bulk)
+Country Elevators - Conventional
+ Region/Location Sale Type Protein           Basis (¢/Bu)          Basis Change         Price($/Bu)        Price Change     Average Year Ago     Freight     Delivery
+   Northwest            Bid      Ordinary -80.00Z to -65.00Z          UNCH            5.7900-5.9400         DN 0.0550       5.8650 4.2925        DLVD-T      Current
+   Southwest            Bid      Ordinary -80.00Z to -65.00Z          UNCH            5.7900-5.9400         DN 0.0550       5.8367 4.2488        DLVD-T      Current
+      South             Bid      Ordinary      -80.00Z                UNCH                5.7900            DN 0.0550       5.7900 4.2625        DLVD-T      Current
+      West              Bid      Ordinary -70.00Z to -60.00Z          UNCH            5.8900-5.9900         DN 0.0550       5.9150 4.1925        DLVD-T      Current
+     Central            Bid      Ordinary      -60.00Z                UNCH                5.9900            DN 0.0550       5.9900 4.3025        DLVD-T      Current
+
+Terminal Elevators - Conventional
+ Region/Location Sale Type Protein          Basis (¢/Bu)           Basis Change         Price($/Bu)        Price Change     Average Year Ago     Freight     Delivery
+    Southeast           Bid     Ordinary      -55.00Z                 UNCH                6.0400            DN 0.0550       6.0400 4.4925        DLVD-T      Current
+      North             Bid     Ordinary      -60.00Z                UP 2.00              5.9900            DN 0.0350       5.9900 4.4925        DLVD-T      Current
+      South             Bid     Ordinary -70.00Z to -32.00Z           UNCH            5.8900-6.2700         DN 0.0550       6.0483 4.5008        DLVD-T      Current
+       East             Bid     Ordinary      -40.00Z                 UNCH                6.1900            DN 0.0550       6.1900 4.6425        DLVD-T      Current
+     Central            Bid     Ordinary      -40.00Z                 UNCH                6.1900            DN 0.0550       6.1900 4.6058        DLVD-T      Current
+
+                                                                              US #1 Hard White Wheat (Bulk)
+Country Elevators - Conventional
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                                 Page 3 of 4
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2886
+                     Kansas Daily Grain Bids
+                     AMS Livestock, Poultry and Grain Market News
+                     KS Dept. of Ag Market News                                                                                                           October 26, 2026
+Email us with accessibility issues with this report.
+ Region/Location Sale Type Protein                 Basis (¢/Bu)       Basis Change         Price($/Bu)     Price Change   Average Year Ago   Freight     Delivery
+   Northwest              Bid      Ordinary          -80.00Z             UNCH                5.7900         DN 0.0550     5.7900 4.2925      DLVD-T      Current
+   Southwest              Bid      Ordinary -110.00Z to -75.00Z          UNCH            5.4900-5.8400      DN 0.0550     5.6400 4.1925      DLVD-T      Current
+       West               Bid      Ordinary -85.00Z to -60.00Z           UNCH            5.7400-5.9900      DN 0.0550     5.8400 4.2175      DLVD-T      Current
+
+Terminal Elevators - Conventional
+ Region/Location Sale Type Protein              Basis (¢/Bu)          Basis Change         Price($/Bu)     Price Change   Average Year Ago   Freight     Delivery
+      South             Bid     Ordinary          -32.00Z                UNCH                6.2700         DN 0.0550     6.2700 4.6925      DLVD-T      Current
+
+
+
+
+Explanatory Notes:
+Price & Basis Values quoted are for Current Delivery, unless otherwise noted.
+
+CBOT/KCBT/MGE Trade month symbols: F January; G February; H March; J April; K May; M June; N July; Q August; U September; V October; X November; Z December.
+
+Freight Codes:
+FOB: Freight On Board
+DLVD: Delivered
+CIF: Cost, Insurance, and Freight
+T: Truck, R: Rail, B: Barge, T/R: Truck/Rail, R/B: Rail/Barge, T/R/B: Truck/Rail/Barge, OV: Ocean Vessel
+
+Trade Regions / Misc Info:
+For more information, click here
+
+
+
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                             Page 4 of 4
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2886
+

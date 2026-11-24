@@ -1,0 +1,98 @@
+                      Nebraska Daily Elevator Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      NE Dept. of Ag Market News                                                                                                                         October 26, 2026
+Email us with accessibility issues with this report.
+
+Grain Report for 10/26/2026 - Final
+
+Futures Settlements
+     Exchange               Commodity                                                       Closing Settlement Prices (¢/bu) as of 10/26/2026
+       CBOT                    Corn             455.00 (Dec 26)     468.75 (Mar 27)      477.50 (May 27)     484.00 (Jul 27)     480.25 (Sep 27)    494.00 (Dec 27)    507.75 (Mar 28)
+       CBOT                  Soybeans          1241.25 (Nov 26)     1252.50 (Jan 27)     1261.00 (Mar 27) 1270.00 (May 27) 1276.50 (Jul 27)        1261.50 (Aug 27)    1230.50 (Sep 27)
+       CBOT                   Wheat             616.00 (Dec 26)     629.75 (Mar 27)      636.50 (May 27)     640.00 (Jul 27)     649.00 (Sep 27)    662.75 (Dec 27)    673.00 (Mar 28)
+       CBOT                 White Oats          360.50 (Dec 26)     371.25 (Mar 27)      375.50 (May 27)     373.25 (Jul 27)     367.50 (Sep 27)    376.00 (Dec 27)    379.50 (Mar 28)
+       KCBT                   Wheat             659.00 (Dec 26)     668.75 (Mar 27)      672.75 (May 27)     674.50 (Jul 27)     683.00 (Sep 27)    695.50 (Dec 27)    703.00 (Mar 28)
+        MGE                   Wheat             634.00 (Dec 26)     651.25 (Mar 27)      663.75 (May 27)     675.50 (Jul 27)     684.25 (Sep 27)    700.75 (Dec 27)
+
+Coarse
+                                                                                       US #2 Yellow Corn (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type             Basis (¢/Bu)      Basis Change               Price($/Bu)          Price Change         Average Year Ago     Freight       Delivery
+   Northwest             Bid              -2.00Z to 40.00Z       UNCH                  4.5300-4.9500           DN 0.0100           4.7496 3.9540        DLVD-T        Current
+    Northeast            Bid            -40.00Z to -38.00Z       UNCH                  4.1500-4.1700           DN 0.0100           4.1600 3.7375        DLVD-T        Current
+   Southwest             Bid             -20.00Z to 13.00Z    UNCH-UP 5.00             4.3500-4.6800      DN 0.0100-UP 0.0400      4.5450 3.8200        DLVD-T        Current
+    Southeast            Bid            -45.00Z to -33.00Z       UNCH                  4.1000-4.2200           DN 0.0100           4.1540 3.8175        DLVD-T        Current
+      South              Bid            -25.00Z to -23.00Z       UNCH                  4.3000-4.3200           DN 0.0100           4.3067 3.9642        DLVD-T        Current
+       East              Bid            -56.00Z to -38.00Z       UNCH                  3.9900-4.1700           DN 0.0100           4.0778 3.8197        DLVD-T        Current
+     Central             Bid            -45.00Z to -20.00Z       UNCH                  4.1000-4.3500           DN 0.0100           4.2700 3.9395        DLVD-T        Current
+
+                                                                                        US #2 Sorghum (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)           Basis Change           Price($/Bu)           Price Change        Average Year Ago     Freight       Delivery
+   Northwest             Bid           -100.00Z to -80.00Z           UNCH              3.5500-3.7500            DN 0.0100          3.6700 2.8750        DLVD-T        Current
+   Southwest             Bid                 -60.00Z                 UNCH                  3.9500               DN 0.0100          3.9500 3.0875        DLVD-T        Current
+    Southeast            Bid                 -77.00Z                 UNCH                  3.7800               DN 0.0100          3.7800 2.9975        DLVD-T        Current
+      South              Bid                 -60.00Z                 UNCH                  3.9500               DN 0.0100          3.9500 3.1875        DLVD-T        Current
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                                            Page 1 of 3
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/3225
+                      Nebraska Daily Elevator Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      NE Dept. of Ag Market News                                                                                                              October 26, 2026
+Email us with accessibility issues with this report.
+       East                Bid                -60.00Z           UNCH                3.9500                DN 0.0100       3.9500   3.2375      DLVD-T      Current
+      Central              Bid                -75.00Z           UNCH                3.8000                DN 0.0100       3.8000   3.0875      DLVD-T      Current
+
+                                                                                  US #1 Soybeans (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type           Basis (¢/Bu)       Basis Change          Price($/Bu)         Price Change       Average Year Ago     Freight     Delivery
+   Northwest             Bid          -145.00X to -80.00X       UNCH            10.9625-11.6125         DN 0.1525         11.4292 9.4308       DLVD-T      Current
+   Southwest             Bid           -85.00X to -75.00X   DN 5.00-UNCH        11.5625-11.6625    DN 0.2025-DN 0.1525    11.6250 9.5850       DLVD-T      Current
+    Southeast            Bid           -85.00X to -65.00X   DN 13.00-UNCH       11.5625-11.7625    DN 0.2825-DN 0.1525    11.7105 9.8165       DLVD-T      Current
+      South              Bid           -75.00X to -65.00X       UNCH            11.6625-11.7625         DN 0.1525         11.7125 9.8225       DLVD-T      Current
+       East              Bid           -90.00X to -65.00X       UNCH            11.5125-11.7625         DN 0.1525         11.6905 9.8275       DLVD-T      Current
+     Central             Bid           -90.00X to -65.00X       UNCH            11.5125-11.7625         DN 0.1525         11.6825 9.8345       DLVD-T      Current
+
+                                                                           US #1 Hard Red Winter Wheat (Bulk)
+Country Elevators - Conventional
+ Region/Location Sale Type Protein            Basis (¢/Bu)         Basis Change         Price($/Bu)        Price Change     Average Year Ago     Freight     Delivery
+   Northwest            Bid      Ordinary -115.00Z to -73.00Z         UNCH            5.4400-5.8600         DN 0.0550       5.6975 4.0142        DLVD-T      Current
+   Southwest            Bid      Ordinary -88.00Z to -55.00Z          UNCH            5.7100-6.0400         DN 0.0550       5.8750 4.0175        DLVD-T      Current
+    Southeast           Bid      Ordinary -65.00Z to -58.00Z          UNCH            5.9400-6.0100         DN 0.0550       5.9925 4.3800        DLVD-T      Current
+      South             Bid      Ordinary       -57.00Z               UNCH                6.0200            DN 0.0550       6.0200 4.4425        DLVD-T      Current
+
+
+
+
+Explanatory Notes:
+Price & Basis Values quoted are for Current Delivery, unless otherwise noted.
+
+CBOT/KCBT/MGE Trade month symbols: F January; G February; H March; J April; K May; M June; N July; Q August; U September; V October; X November; Z December.
+
+Freight Codes:
+FOB: Freight On Board
+DLVD: Delivered
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                                 Page 2 of 3
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/3225
+                     Nebraska Daily Elevator Grain Bids
+                     AMS Livestock, Poultry and Grain Market News
+                     NE Dept. of Ag Market News                                                            October 26, 2026
+Email us with accessibility issues with this report.
+CIF: Cost, Insurance, and Freight
+T: Truck, R: Rail, B: Barge, T/R: Truck/Rail, R/B: Rail/Barge, T/R/B: Truck/Rail/Barge, OV: Ocean Vessel
+
+Trade Regions / Misc Info:
+For more information, click here
+
+
+
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                            Page 3 of 3
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/3225
+

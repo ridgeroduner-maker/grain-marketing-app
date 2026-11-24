@@ -1,0 +1,93 @@
+                      Iowa Daily Cash Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      IA Dept. of Ag Market News                                                                                                                       October 26, 2026
+Email us with accessibility issues with this report.
+
+Grain Report for 10/26/2026 - Final
+State Average Price: Corn -- $4.12 (-.43Z) Down 1 cent | Soybeans -- $11.70 (-.72X) Down 16 cents
+Terminal Elevators: Southwest Region - Council Bluffs locations
+
+
+
+
+Futures Settlements
+     Exchange               Commodity                                                     Closing Settlement Prices (¢/bu) as of 10/26/2026
+       CBOT                    Corn             455.00 (Dec 26)   468.75 (Mar 27)      477.50 (May 27)     484.00 (Jul 27)     480.25 (Sep 27)    494.00 (Dec 27)    507.75 (Mar 28)
+       CBOT                  Soybeans          1241.25 (Nov 26)   1252.50 (Jan 27)     1261.00 (Mar 27) 1270.00 (May 27) 1276.50 (Jul 27)        1261.50 (Aug 27)    1230.50 (Sep 27)
+       CBOT                   Wheat             616.00 (Dec 26)   629.75 (Mar 27)      636.50 (May 27)     640.00 (Jul 27)     649.00 (Sep 27)    662.75 (Dec 27)    673.00 (Mar 28)
+       CBOT                 White Oats          360.50 (Dec 26)   371.25 (Mar 27)      375.50 (May 27)     373.25 (Jul 27)     367.50 (Sep 27)    376.00 (Dec 27)    379.50 (Mar 28)
+       KCBT                   Wheat             659.00 (Dec 26)   668.75 (Mar 27)      672.75 (May 27)     674.50 (Jul 27)     683.00 (Sep 27)    695.50 (Dec 27)    703.00 (Mar 28)
+        MGE                   Wheat             634.00 (Dec 26)   651.25 (Mar 27)      663.75 (May 27)     675.50 (Jul 27)     684.25 (Sep 27)    700.75 (Dec 27)
+
+Coarse
+                                                                                     US #2 Yellow Corn (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)        Basis Change            Price($/Bu)         Price Change          Average Year Ago     Freight       Delivery
+   Northwest             Bid            -45.00Z to -35.00Z        UNCH               4.1000-4.2000          DN 0.0100            4.1329 3.8432        DLVD-T        Current
+  North Central          Bid            -48.00Z to -40.00Z        UNCH               4.0700-4.1500          DN 0.0100            4.1110 3.8705        DLVD-T        Current
+    Northeast            Bid            -63.00Z to -35.00Z        UNCH               3.9200-4.2000          DN 0.0100            4.0722 3.8664        DLVD-T        Current
+   Southwest             Bid            -45.00Z to -35.00Z        UNCH               4.1000-4.2000          DN 0.0100            4.1543 3.8875        DLVD-T        Current
+  South Central          Bid            -40.00Z to -38.00Z        UNCH               4.1500-4.1700          DN 0.0100            4.1614 3.8618        DLVD-T        Current
+    Southeast            Bid            -64.00Z to -25.00Z   UP 1.00-UP 10.00        3.9100-4.3000        UNCH-UP 0.0900         4.1267 3.8392        DLVD-T        Current
+Terminal Elevators - Conventional
+ Region/Location       Sale Type           Basis (¢/Bu)       Basis Change             Price($/Bu)          Price Change         Average Year Ago     Freight       Delivery
+    Southwest             Bid           -27.00Z to -25.00Z   UNCH-DN 10.00           4.2800-4.3000      DN 0.0100-DN 0.1100      4.2900 4.0375        DLVD-T        Current
+
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                                          Page 1 of 3
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2850
+                      Iowa Daily Cash Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      IA Dept. of Ag Market News                                                                                                                 October 26, 2026
+Email us with accessibility issues with this report.
+                                                                                    US #1 Soybeans (Bulk)
+Country Elevators - Conventional
+ Region/Location      Sale Type            Basis (¢/Bu)       Basis Change           Price($/Bu)               Price Change      Average Year Ago   Freight   Delivery
+   Northwest             Bid            -70.00X to -45.00X       UNCH             11.7125-11.9625               DN 0.1525        11.7911 9.9254     DLVD-T    Current
+  North Central          Bid            -82.00X to -60.00X       UNCH             11.5925-11.8125               DN 0.1525        11.7095 9.9645     DLVD-T    Current
+    Northeast            Bid            -90.00X to -61.00X       UNCH             11.5125-11.8025               DN 0.1525        11.6447 9.9881     DLVD-T    Current
+   Southwest             Bid            -90.00X to -65.00X       UNCH             11.5125-11.7625               DN 0.1525        11.6082 9.9568     DLVD-T    Current
+  South Central          Bid           -100.00X to -72.00X       UNCH             11.4125-11.6925               DN 0.1525        11.6239 9.9311     DLVD-T    Current
+    Southeast            Bid            -92.00X to -55.00X   DN 10.00-UNCH        11.4925-11.8625          DN 0.2525-DN 0.1525   11.7125 10.0458    DLVD-T    Current
+Terminal Elevators - Conventional
+ Region/Location       Sale Type           Basis (¢/Bu)        Basis Change          Price($/Bu)              Price Change       Average Year Ago   Freight   Delivery
+    Southwest             Bid                -90.00X             DN 5.00              11.5125                  DN 0.2025         11.5125 9.9425     DLVD-T    Current
+Mills and Processors - Conventional
+ Region/Location       Sale Type       Basis (¢/Bu)            Basis Change          Price($/Bu)              Price Change       Average Year Ago   Freight   Delivery
+                          Bid       -60.00X to -25.00X            UNCH            11.8125-12.1625              DN 0.1525         11.9525 10.3125    DLVD-T    Current
+
+
+
+
+Explanatory Notes:
+Price & Basis Values quoted are for Current Delivery, unless otherwise noted.
+
+CBOT/KCBT/MGE Trade month symbols: F January; G February; H March; J April; K May; M June; N July; Q August; U September; V October; X November; Z December.
+
+Freight Codes:
+FOB: Freight On Board
+DLVD: Delivered
+CIF: Cost, Insurance, and Freight
+T: Truck, R: Rail, B: Barge, T/R: Truck/Rail, R/B: Rail/Barge, T/R/B: Truck/Rail/Barge, OV: Ocean Vessel
+
+Trade Regions / Misc Info:
+For more information, click here
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                                                                                  Page 2 of 3
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2850
+                      Iowa Daily Cash Grain Bids
+                      AMS Livestock, Poultry and Grain Market News
+                      IA Dept. of Ag Market News                                                 October 26, 2026
+Email us with accessibility issues with this report.
+
+
+
+
+Source: USDA AMS Livestock, Poultry & Grain Market News                                                  Page 3 of 3
+        General inquiries, please call: (202) 720-1990 or email: mymarketnews@usda.gov
+        http://www.ams.usda.gov/lpgmn
+        https://mymarketnews.ams.usda.gov/ | https://mymarketnews.ams.usda.gov/viewReport/2850
+
