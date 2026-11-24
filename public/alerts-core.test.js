@@ -38,3 +38,24 @@ if (!/r\.bage <= GrainAlerts\.MAX_RELIABLE_BDAYS/.test(app) || !/GrainAlerts\.DO
 if (bdaysBetween('2026-10-23', '2026-10-26') !== 1 || bdaysBetween('2026-10-26', '2026-10-26') !== 0) { console.error('FAIL bdays'); process.exit(1); }
 if (!/call your elevator/.test(f[0].body)) { console.error('FAIL body note'); process.exit(1); }
 console.log('freshRows ok');
+
+// Hard 7-day limit in the browser (audit F-02): report date more than STALE_EXPIRE_DAYS CALENDAR days before today (Central) is hidden.
+if (G.STALE_EXPIRE_DAYS !== 7) { console.error('FAIL STALE_EXPIRE_DAYS must match ingest/config.py (7)'); process.exit(1); }
+const cfgPy = fs.readFileSync(__dirname + '/../ingest/config.py', 'utf8');
+if (!new RegExp('STALE_EXPIRE_DAYS = ' + G.STALE_EXPIRE_DAYS + '\\b').test(cfgPy)) { console.error('FAIL browser and export stale limits differ'); process.exit(1); }
+if (G.calendarDaysBetween('2026-10-30', '2026-11-10') !== 11 || G.calendarDaysBetween('2026-11-01', '2026-11-02') !== 1   // across the Nov 1 DST change
+    || G.calendarDaysBetween('2026-11-10', '2026-11-09') !== -1) { console.error('FAIL calendarDaysBetween'); process.exit(1); }
+{
+  const sp = G.splitExpired([mk('2026-11-17'), mk('2026-11-16'), mk('2026-11-24'), mk('2026-10-30'), Object.assign({}, rows[0], { report_date: null })], 7, '2026-11-24');
+  const k = sp.kept.map(r => r.report_date), h = sp.hidden.map(r => r.report_date);
+  if (JSON.stringify(k) !== JSON.stringify(['2026-11-17', '2026-11-24']) || JSON.stringify(h) !== JSON.stringify(['2026-11-16', '2026-10-30', null])) {
+    console.error('FAIL splitExpired: exactly 7 days old is kept, 8+ or no date is hidden', k, h); process.exit(1);
+  }
+  if (G.splitExpired([mk('2026-11-16')], undefined, '2026-11-24').hidden.length !== 1) { console.error('FAIL splitExpired default limit'); process.exit(1); }
+  if (G.splitExpired([], 7, '2026-11-24').kept.length !== 0) { console.error('FAIL splitExpired empty'); process.exit(1); }
+}
+// app.js must route every load of latest.json through the filter, use Central "today", and show the stale notice.
+if ((app.match(/loadJSON\('latest\.json'\)/g) || []).length !== (app.match(/setLatest\(/g) || []).length - 1) { console.error('FAIL every latest.json load must go through setLatest()'); process.exit(1); }
+if (!/GrainAlerts\.splitExpired\(rows, expireDays\(\), today\)/.test(app) || !/const today = chicagoToday\(\)/.test(app)) { console.error('FAIL app.js hide rule'); process.exit(1); }
+if (!/Data is stale\./.test(app) || !/state\.meta\.stale_expire_days/.test(app)) { console.error('FAIL app.js stale notice'); process.exit(1); }
+console.log('splitExpired ok');

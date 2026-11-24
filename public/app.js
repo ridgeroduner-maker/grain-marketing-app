@@ -54,13 +54,26 @@ async function loadAll() {
     if (base === 'data/' && CFG.ALLOW_SAMPLE) { base = 'data-sample/'; state.meta = await loadJSON('meta.json'); $('noteBanner').hidden = false; $('noteBanner').textContent = 'No real data ingested yet — showing SAMPLE data. Run the ingest job (see README).'; }
     else throw new Error('No bid data is available yet (' + e.message + '). Please try again later.');
   }
-  [state.latest, state.history, state.futures] = await Promise.all([loadJSON('latest.json'), loadJSON('history.json'), loadJSON('futures.json')]);
+  let latest;
+  [latest, state.history, state.futures] = await Promise.all([loadJSON('latest.json'), loadJSON('history.json'), loadJSON('futures.json')]);
   try { state.outside = await loadJSON('outside.json'); } catch (e) { state.outside = []; }     // older exports have none
   $('sampleBanner').hidden = !state.meta.sample;
-  const today = chicagoToday();
-  state.latest.forEach(r => { r.bage = bdaysBetween(r.report_date, today); });
+  setLatest(latest);
   const times = Object.values(state.meta.report_times || {}).map(t => t.posted_at).filter(Boolean).sort();
   $('asof').textContent = 'USDA AMS reports for ' + state.meta.latest_report_date + (times.length ? ' · last posted ' + fmtPosted(times[times.length - 1]) : '') + (state.meta.sample ? ' (SAMPLE)' : '');
+}
+// Hide bids past the hard stale limit IN THE BROWSER (audit F-02): the export drops them too, but when the daily update fails the old
+// file stays up, so the page itself must not show an old price. Report date vs today in Central Time; sample data is never hidden.
+const expireDays = () => (state.meta && Number.isFinite(state.meta.stale_expire_days)) ? state.meta.stale_expire_days : GrainAlerts.STALE_EXPIRE_DAYS;
+function setLatest(rows) {
+  const today = chicagoToday();
+  if (state.meta && state.meta.sample) { state.latest = rows; state.hiddenStale = []; }
+  else {
+    const sp = GrainAlerts.splitExpired(rows, expireDays(), today);
+    state.latest = sp.kept; state.hiddenStale = sp.hidden;
+    state.outside = GrainAlerts.splitExpired(state.outside || [], expireDays(), today).kept;
+  }
+  state.latest.forEach(r => { r.bage = bdaysBetween(r.report_date, today); });
 }
 const futuresMode = () => (CFG.FUTURES_DISPLAY === 'basis_only' || (state.meta && state.meta.futures_display === 'basis_only')) ? 'basis_only' : 'full';
 
@@ -92,6 +105,12 @@ function renderStatus() {
   const stale = reps.map(([k, t]) => ({ name: t.label || k, date: t.report_date, b: bdaysBetween(t.report_date, chicagoToday()) })).filter(x => x.b >= GrainAlerts.DO_NOT_RELY_BDAYS);
   if (stale.length && stale.length < reps.length) warn.push(`${stale.map(x => esc(x.name) + ' (report date ' + esc(x.date) + ', ' + x.b + ' business days old)').join('; ')} ${stale.length === 1 ? 'is' : 'are'} out of date while other reports are newer. ` +
     'Those bids are tagged “Nd old” and left out of “Best bid near me” rankings, and alerts ignore them.');
+  const hid = state.hiddenStale || [];
+  if (hid.length) {
+    const oldest = hid.map(r => r.report_date).filter(Boolean).sort()[0];
+    warn.push(`<b>Data is stale.</b> ${hid.length} bid(s) are hidden because their USDA report is more than ${expireDays()} days old (Central Time${oldest ? '; oldest hidden report date ' + esc(oldest) : ''}). ` +
+      (state.latest.length ? 'Only newer bids are shown.' : 'No current bids to show: the daily update has not brought in newer USDA reports. Check back later or see mymarketnews.ams.usda.gov.'));
+  }
   if (ageB >= GrainAlerts.DO_NOT_RELY_BDAYS) warn.push(`These reports are ${ageB} business days old — newer ones may be out and not yet loaded. Do not rely on these prices.`);
   else if (ageB === 1) msgs.push('Today’s reports are usually posted about 2 to 4 pm Central.');
   if (state.fromCache || navigator.onLine === false) warn.push(`You appear to be offline — this is a copy saved on your device. The data was generated ${esc(ago(m.generated_at))}.`);
@@ -395,7 +414,7 @@ function initAlerts() {
   $('btnNotif').onclick = async () => { if ('Notification' in window) { await Notification.requestPermission(); renderAlerts(); } };
   $('btnCheck').onclick = () => checkAlerts(true);
   GrainAlerts.kvSet('alerts', loadAlerts()).catch(() => {});
-  setInterval(async () => { try { state.latest = await loadJSON('latest.json'); state.latest.forEach(r => { r.bage = bdaysBetween(r.report_date, chicagoToday()); }); checkAlerts(false); } catch (e) { } }, 15 * 60 * 1000);
+  setInterval(async () => { try { setLatest(await loadJSON('latest.json')); checkAlerts(false); } catch (e) { } }, 15 * 60 * 1000);
   checkAlerts(false);
 }
 
