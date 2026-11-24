@@ -1,0 +1,42 @@
+# Run the test suites on every pull request. Read-only: no secrets, no deploy, nothing written back to the repo.
+# This is the same test step the Pages workflow runs before it publishes, so a broken change is caught on the PR instead of after it
+# lands on main (audit 2026-11-10, finding F-09). Free on public repos.
+name: Tests
+
+on:
+  pull_request:                 # every PR, any base branch; runs the PR's code with a read-only token (never pull_request_target)
+  workflow_dispatch:
+
+permissions:
+  contents: read                # least privilege: the job only reads the repo
+
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true      # a newer push to the same PR replaces the older test run (this job never deploys)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Same pins as pages.yml (tag in the comment). setup-node v7.1.0 checked 2026-11-24 on its releases page.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Python tests (unittest)
+        run: python3 -m unittest discover -s ingest/tests
+
+      - name: Node tests
+        run: |
+          node public/alerts-core.test.js
+          node public/mapmode.test.js
+          node public/directory.test.js
